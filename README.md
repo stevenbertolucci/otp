@@ -1,4 +1,4 @@
-# otp
+# OTP (One-Time Pad)
 
 ## Introduction
 In this assignment, I will be creating five small programs that encrypt and decrypt information using a one-time pad-like system. 
