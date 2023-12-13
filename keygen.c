@@ -22,21 +22,25 @@ int main(int argc, char* argv[]) {
 
   srand(time(0));
   int number = atoi(argv[1]);
-  char key[number++];                           /* For null terminator */
+  char key[number + 1];                         /* For null terminator */
   char* alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";  /* The accepted 27 characters */
+  int randomChar;                               /* For randomizing */
 
   if (argc != 2)                                /* If there are less than 2 arguments, exit */
   {
-    printf("Usage: %s length\n", argv[0]);
+    printf("Usage: %s length\n", argv[0]);      /* Display error message */
     exit(EXIT_SUCCESS);
   }
 
   for (int i = 0; i < number; i++)              /* Randomize the key */
   {
-    key[i] = alpha[rand() % 27];
+    randomChar = rand() % 27;
+    key[i] = alpha[randomChar];                /* Randomize the characters */
   }
 
-  key[number] = '\0';                          /* Add null terminator to the key */
+  key[number] = '\0';                           /* Add null terminator to the key */
 
-  printf("%s\n", key);
+  printf("%s\n", key);                          /* Print the key */                
+  return 0;
 }
+
