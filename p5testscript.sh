@@ -14,8 +14,7 @@ then
 fi
 
 #Clean up any previous runs
-${echo} '#Initializing - Cleaning up - ignore Operation Not Permitted errors'
-${echo} '#Note: this script requires that the current directory (.) be in your PATH in ~/.bashrc'
+${echo} '#Initializing - Cleaning up ...'
 killall -q -u $USER dec_client
 killall -q -u $USER dec_server
 killall -q -u $USER enc_client
@@ -136,7 +135,7 @@ ls -pla
 #Clean up
 ${echo}
 ${echo} '#-----------------------------------------'
-${echo} '#Cleaning up - ignore Operation Not Permitted errors'
+${echo} '#Cleaning up'
 killall -q -u $USER ./dec_client
 killall -q -u $USER ./dec_server
 killall -q -u $USER ./enc_client

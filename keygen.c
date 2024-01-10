@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
   srand(time(0));
   int number = atoi(argv[1]);
   char key[number + 1];                         /* For null terminator */
-  char* alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";  /* The accepted 27 characters */
+  char* alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";  /* The accepted 26 characters plus space */
   int randomChar;                               /* For randomizing */
 
   if (argc != 2)                                /* If there are less than 2 arguments, exit */
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < number; i++)              /* Randomize the key */
   {
     randomChar = rand() % 27;
-    key[i] = alpha[randomChar];                /* Randomize the characters */
+    key[i] = alpha[randomChar];                 /* Randomize the characters */
   }
 
   key[number] = '\0';                           /* Add null terminator to the key */

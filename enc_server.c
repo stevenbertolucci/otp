@@ -21,8 +21,6 @@
 //      connected to via the same connected socket.
 //    * Note that the key passed in must be at least as big as the plaintext.
 // ------------------------------------------------------------------------------------------------------
-//
-// Citation: Most of this implementation came from the provided replit: https://replit.com/@cs344/83serverc?lite=true#server.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,6 +32,7 @@
 #include <sys/wait.h>
 
 #define BUFFER_SIZE 256
+int charsRead; 
 
 
 void 
@@ -55,201 +54,243 @@ setupAddressStruct(struct sockaddr_in* address, int portNumber)
 }
 
 
-int 
-convertChar (char c)                                                     /* Function to convert characters to integers */
-{
-	if (c == ' ')
-  {
-		return 26;                                                           /* End of file marker */
-	} else {
-		return (c - 'A');                                                    /* Replace the character with whatever value is subtracted */
-	}
-
-	return 0;
-}
-
-
-char 
-convertInt (int i)                                                       /* Function to convert integers to characters */
-{
-	if (i == 26)                           
-  {
-		return ' ';                                                          /* Return space. */
-	} else {
-		return (i + 'A');
-	}
-}
-
-
 void 
-encrypt(char* message, char* key)                                        /* Encrypt the message */
-{
-	int i;
-	char n;
+encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Function encrypt to encrypt the plaintext with the key  */
+{    
+  int i;        
 
-	for (i = 0; message[i] != '\n'; i++)                                   /* Loop through each characters and encrypt them */
-  {		
-    n = (convertChar(message[i]) + convertChar(key[i])) % 27;        
+  for (i = 0; plaintext[i] != '\n'; i++) {                              /* Loop through each character in the plaintext and encrypt them */
 
-	  message[i] = convertInt(n);                                          /* Save each encrypted characters */
-	}
+    char c = plaintext[i]; 
+    char k = key[i];
 
-	  message[i] = '\0';                                                   /* Append null terminator to the last byte */
+    if (c == ' ') {                                                     /* If space, save the space since it does not need to be encrypted */
 
-	  return;
-}
+      ciphertext[i] = ' ';
 
-void 
-clearBuffer(char* buffer) {
-    memset(buffer, '\0', BUFFER_SIZE);
-}
+    } else {
 
+      c = (c - 'A');                                                    /* Convert ascii value to int */
+      k = (k - 'A');                                                    /* Convert ascii value to int */
 
-int main(int argc, char *argv[])
-{
-	int connectionSocket, charsRead, status;
-  char* unsuccessful = "-1";
-  char* acknowledged = "ACK";
-  char* synchronizedAck = "SYNACK";
-	socklen_t sizeOfClientInfo;
-	struct sockaddr_in serverAddress, clientAddress;
-	pid_t pid;                                                           /* For concurrency */
+      int value = ((c + k) % 27);                                       /* Modulo operation using 27 characters */
 
-	if (argc < 2)                                                        /* Check usage & args. If there are less than 2 arguments */
-  { 
-    fprintf(stderr, "USAGE: %s port\n", argv[0]); 
-    exit(1);                                                           /* Exit failure */
-  }
+      if (value < 0) {                                                  /* If value is negative, add 27 */
 
-  setupAddressStruct(&serverAddress, atoi(argv[1]));                   /* Set up the address struct for the server socket */
+        value += 27;
 
-	int listenSocket = socket(AF_INET, SOCK_STREAM, 0);                  /* Create the socket using TCP */
-
-	if (listenSocket < 0)                                                /* Check for socket errors */
-  {
-    error("ERROR opening socket");
-  }
-
-	/* Bind the socket to begin listening */
-	if (bind(listenSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {       /* Associate the socket to the port */
-		error("ERROR on binding");
-  }
-
-	while(1) {                                                          
-		listen(listenSocket, 5);                                           /* It can now "listen" up to 5 connections */	
-
-
-		sizeOfClientInfo = sizeof(clientAddress);                          /* Get the size of the client address */
-		connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);       /* Accept the connection */
-
-		if (connectionSocket < 0) {                                        /* Check for connection error */
-      error("ERROR on accept");
-    }
-
-		
-		pid = fork();                                                      /* Fork a process */	
-
-	  if (pid == -1)
-    {
-		  error("Couldn't fork\n");                                        /* Error when forking */
-		}
-
-		if (pid == 0)
-    {
-		  char buffer[256];                                                /* Allocate the buffer */
-			char message[71000];                                             /* Allocate the message */
-			char key[71000];                                                 /* Allocate the key */
-			int charsWritten = 0;
-
-			clearBuffer(buffer);                                             /* Clear buffer array */
-			charsRead = 0;
-
-			while(charsRead == 0)
-      {
-				charsRead = recv(connectionSocket, buffer, 255, 0);            /* Receive the client's message */
       }
 
-			if (charsRead < 0)                                               /* If nothing has been received, send error */
-      { 
+      value += 'A';                                                     /* Convert int back to char */
+
+      ciphertext[i] = value;                                            /* Save the character to the ciphertext array */
+    }
+  }
+
+  ciphertext[i] = '\0';                                                 /* Null-terminate the ciphertext */
+}
+
+
+void
+resetBytesReceived() 
+{
+
+  charsRead = 0;
+
+}
+
+
+
+int main(int argc, char *argv[]) {
+
+  int listenSocket, connectionSocket, buffer_length;
+  char* portNumber = argv[1];
+  struct sockaddr_in serverAddress, clientAddress;
+  socklen_t sizeOfClientInfo = sizeof(clientAddress);
+
+  if (argc < 2) {                                                                                     /* Check usage & args */
+
+    fprintf(stderr, "USAGE: %s port\n", argv[0]);                                                     /* Print error */
+    exit(1);
+
+  }
+  
+  listenSocket = socket(AF_INET, SOCK_STREAM, 0);                                                     /* Create the socket that will listen for connections */
+
+  if (listenSocket < 0) 
+  {
+
+    error("ERROR opening socket");                                                                    /* Print error */
+
+  }
+
+  setupAddressStruct(&serverAddress, atoi(argv[1]));                                                  /* Set up the address struct for the server socket */
+
+  if (bind(listenSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {             /* Associate the socket to the port */
+    error("ERROR on binding");
+  }
+
+  listen(listenSocket, 5);                                                                            /* Start listening up to 5 connections */                           
+  
+  while(1) 
+  {
+    connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);    /* Accept the connection */
+
+    if (connectionSocket < 0) {                                                         /* Check for connectionn error */
+
+      error("ERROR on accept");                                                         /* Print error message if there were accepting issues */
+
+    }
+
+   // printf("13. SERVER: Connected to client running at host %d port %d\n", 
+     //      ntohs(clientAddress.sin_addr.s_addr),
+       //    ntohs(clientAddress.sin_port));
+
+    pid_t pid = fork();                                                                 /* Fork a process to handle multiple connections */
+
+    if (pid == -1) 
+    {
+
+      error("SERVER: Error Forking");                                                   /* Couldn't fork. Fork error */
+
+    }
+
+    if (pid == 0) {                                                                     /* Child process */
+
+      char plaintext[70010];
+      char key[70010];
+      char ciphertext[70010];
+      char buffer[256];
+      charsRead = 0;
+      int totalReceived = 0;
+      int bytesReceived = 0;
+
+
+      memset(plaintext, '\0', sizeof(plaintext));
+      memset(key, '\0', sizeof(key));
+      memset(ciphertext, '\0', sizeof(ciphertext));
+      memset(buffer, '\0', sizeof(buffer));
+
+    
+      charsRead = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
+
+      if (charsRead < 0)
+      {
         error("ERROR reading from socket");
       }
 
-		  if (strcmp(buffer, "Hello, from enc_client!") != 0)                             /* Send response to client */
+      if (strcmp(buffer, portNumber) != 0)
       {
+        send(connectionSocket, "-1", strlen("-1"), 0);
+        exit(2);
 
-				charsRead = send(connectionSocket, unsuccessful, strlen(unsuccessful), 0);    /* The response to be sent (-1) because it failed to connect */
-				exit(2);                                                                      /* Exit on status 2 per assignment requirement */
+      } else {
+
+        send(connectionSocket, "SYNACK", strlen("SYNACK"), 0);
+
+        recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
+        send(connectionSocket, "ACK", strlen("ACK"), 0);
+
+
+
+        /* ************************************ */
+        /*                                      */
+        /*        Receive Plaintext File        */
+        /*                                      */
+        /* ************************************ */
+        resetBytesReceived();
+        buffer_length = atoi(buffer);
+
+        while (totalReceived < buffer_length) 
+        {
+          bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);       /* Receive the plaintext from the client */
           
-			} else {
+          if (bytesReceived < 0) {
 
-				clearBuffer(buffer);                                                          /* Clear the buffer */
-				charsRead = send(connectionSocket, acknowledged, strlen(acknowledged), 0);    /* Send response, "acknowledged" to the client */
-				charsRead = 0;
+            error("ERROR reading plaintext from socket");                              /* Print error if threre was an issue getting plaintext from client */
+          }
+
+          for (int i = 0; i < bytesReceived; i++) {
+             plaintext[totalReceived + i] = buffer[i];
+          }
+
+          totalReceived += bytesReceived;
+        }
+
+        //printf("Received plaintext\n");
+
+
+        /* ************************************* */
+        /*                                       */
+        /*           Receive Key File            */
+        /*                                       */
+        /* ************************************* */
+
+        resetBytesReceived();
+        totalReceived = 0;
+        bytesReceived = 0;
+        //printf("Now reading in key\n");
+
+        while (totalReceived < buffer_length)
+        {
+          bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
           
-				while (charsRead == 0)                                                        /* For receiving the file */                                    
-        {	
-          charsRead = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);          /* Receive the file from the client */
-				}
+          if (bytesReceived < 0) {
 
-				int size_buffer = atoi(buffer);                                               /* Get buffer length */
+            error("ERROR reading key from socket");
 
-				charsRead = send(connectionSocket, synchronizedAck, strlen(synchronizedAck), 0);  /* Send SYNACK to the client that the files have been received */
-				charsRead = 0;
-				int charsSent = 0;
-					
-				while (charsRead < size_buffer)
+          }
+
+          for (int i = 0; i < bytesReceived; i++) {
+            
+            key[totalReceived + i] = buffer[i];
+          }
+
+          totalReceived += bytesReceived;
+
+        }
+
+        //printf("Received key\n");
+
+        /* ************************************** */
+        /*                                        */
+        /*          Encrypt Plaintext             */
+        /*                                        */
+        /* ************************************** */
+
+        //printf("Now encrypting plaintext\n");
+        encrypt(ciphertext, plaintext, key);                                            /* Encrypt the plaintext with the key and save it to ciphertext */
+
+      
+        /* ************************************** */
+        /*                                        */
+        /*          Sending Ciphertext            */
+        /*                                        */
+        /* ************************************** */
+        //printf("Sending ciphertext to client\n");
+        resetBytesReceived();                                                           /* Reset count */
+
+        while (charsRead < buffer_length) 
         {
-					clearBuffer(buffer);                                                        /* Clear the buffer */
-					charsSent = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);          /* Receive the response */
-					charsRead += charsSent;
-					charsSent = 0;
-					strcat(message, buffer);                                                    /* Concatenate the buffer into message */
-					clearBuffer(buffer);                                                        /* Clear the buffer */
-				}
+          charsRead += send(connectionSocket, ciphertext, sizeof(ciphertext), 0);       /* Send the ciphertext back to client */
+        }
 
-				charsRead = 0;                                                                /* Reset for receving messages */
-				charsSent = 0;                                                                /* Reset for sending messages */
+        if (charsRead < 0) {
 
-				while (charsRead < size_buffer)
-        {
-					clearBuffer(buffer);                                                        /* Clear the buffer */
-					charsSent = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);          /* Receive the response */
-					charsRead += charsSent;
-					charsSent = 0;
-					strcat(key, buffer);                                                        /* Concatentate the key from the buffer */
-					clearBuffer(buffer);                                                        /* Clear the buffer */
-				}
+          error("ERROR writing ciphertext to socket");                                  /* Print error if there was an issue sending the ciphertext back to client */
 
-				encrypt(message, key);                                                        /* Encrypt the message */
-				clearBuffer(buffer);                                                          /* Clear the buffer */
+        }
+      
+        exit(0);
+        }
+      }
 
-				charsWritten = 0;
+    close(connectionSocket);                                                            /* Close the connection socket for the child process */
+    while(waitpid(-1, NULL, WNOHANG) > 0);                                              /* Clean up zombie processes */
+  }
+  
+  close(listenSocket);                                                                  /* Close the listening socket */
 
-				while (charsWritten < size_buffer)
-        {
-					clearBuffer(buffer);                                                        /* Clear out the buffer */
-					charsWritten += send(connectionSocket, message, sizeof(message), 0);        /* Send message to client */
-					clearBuffer(buffer);                                                        /* Clear out the buffer */						
-				}	
-
-				exit(0);
-
-			}
-		}
-
-		if (pid == 1)
-    {
-		  waitpid(pid, &status, WNOHANG);                                                 /* Wait for the child process to finish */
-		}
-		
-
-		close(connectionSocket);                                                          /* Close the conection socket for this client */
-                                    
-	}
-
-	close(listenSocket);                                                                /* Close the listening socket */
-
-	return 0;
+  return 0;
 }
-
 

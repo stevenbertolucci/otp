@@ -20,196 +20,433 @@
 //
 //  Again, any and all error text must be output to stderr (not into the plaintext or ciphertext files).
 // --------------------------------------------------------------------------------------------------------
-//
-// Citation: Most of the implementation came from this provided replit: https://replit.com/@cs344/83clientc?lite=true#client.c
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>                      /* ssize_t */
-#include <sys/socket.h>                     /* send(), recv() */
-#include <netinet/in.h>
-#include <netdb.h>                          /* gethostbyname() */
-#include <ctype.h>
-#include <fcntl.h>                          /* For read/write */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <fcntl.h>
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 256                                                                 /* Constant size for buffer */
+
+int charsRead;                                                                          /* Set charsRead as a global variable */
+int charsWritten;                                                                       /* Set charsWritten as a gglobal variable */
+int plaintextLength = 0;                                                                /* Initialize count for the plaintext file */
+int keyLength = 0;                                                                      /* Initialize count for the key file */
+int socketFD;
 
 void 
-error(const char *msg) {                    /* For error handling */
-  perror(msg); 
-  exit(0); 
-}
-
-// Set up the address struct
-void setupAddressStruct(struct sockaddr_in* address, 
-                        int portNumber, 
-                        char* hostname) {
-
-    memset((char*) address, '\0', sizeof(*address));                      /* Clear out the address struct */ 
-    address->sin_family = AF_INET;                                        /* The address should be network capable */
-    address->sin_port = htons(portNumber);                                /* Store the port number */
-
-    struct hostent* hostInfo = gethostbyname(hostname);                   /* Get the DNS entry for this host name */
-
-    if (hostInfo == NULL) {                                               /* If there is no host to connect */
-        fprintf(stderr, "CLIENT: ERROR, no such host\n");                 /* Display the stderr */
-        exit(0); 
-    }
-
-    memcpy((char*) &address->sin_addr.s_addr,                             /* Copy the first IP address from the DNS entry to sin_addr.s_addr */
-           hostInfo->h_addr_list[0],
-           hostInfo->h_length);
-}
-
-int number_of_characters (const char* filename) {                         /* Function to keep track of the characters */
-
-	int file_content;
-	int count = 0;
-	FILE* file = fopen(filename, "r");                                      /* Open the file for reading */
-
-    while (1) {
-      file_content = fgetc(file);                                         /* Get the data */
-
-      if (file_content == EOF || file_content == '\n')                    /* Break if end of file or newline at EOF */ 
-      {
-        break;
-      }
-
-		  if (!isupper(file_content) && file_content != ' ')
-      {
-			  error("Input contains bad characters!\n");                        /* If the file contains bad characters, display this message */
-		  }
-
-        count++;                                                          /* Increment the count of characters */
-    }
-
-	fclose(file);                                                           /* Close file */
-
-	return count;
-}
-
-void clearBuffer(char* buffer) {
-    memset(buffer, '\0', BUFFER_SIZE);                                    /* Clear buffer array */
+error(const char *msg)                                                                  /* Error function used for reporting issues */
+{                                                                  
+  perror(msg);
+  exit(1);
 }
 
 
-int main(int argc, char *argv[])
+void   
+setupAddressStruct(struct sockaddr_in* address, int portNumber, char* hostname)         /* Set up the address struct */
 {
-	int socketFD, charsWritten, charsRead, file_descriptor;
-  char* unsuccessful = "-1";
-  char* synchronizedAck = "SYNACK";
-	struct sockaddr_in serverAddress;
+  memset((char*) address, '\0', sizeof(*address));
+  address->sin_family = AF_INET;
+  address->sin_port = htons(portNumber);
 
-	char buffer[256];                                                     /* Allocate buffer length */
-	char ciphertext[71000];                                               /* Allocate ciphertext length */
+  struct hostent* hostInfo = gethostbyname(hostname);
 
-	if (argc < 3)                                                         /* Check usage and args */
-  { 
-    fprintf(stderr, "USAGE: %s hostname port\n", argv[0]);              /* Print to stderr if there are less than 3 args */
-    exit(0);                                                            /* Exit Success (0) */
+  if (hostInfo == NULL) {
+    fprintf(stderr, "CLIENT: ERROR, no such host\n");
+    exit(2);
   }
 
-  /* Set up the address struct for the server socket */
-	setupAddressStruct(&serverAddress, atoi(argv[3]), "localhost");
-  
-	socketFD = socket(AF_INET, SOCK_STREAM, 0);                           /* Create the socket using TCP */
+  memcpy((char*) &address->sin_addr.s_addr, 
+         hostInfo->h_addr_list[0], 
+         hostInfo->h_length);
+}
 
-	if (socketFD < 0) {
-    error("CLIENT: ERROR opening socket");                              /* Check for socket error */
+
+void
+checkPort(int argc, char *argv[])
+{
+  /* ************************************** */
+  /*                                        */
+  /*        Checking Hostname Port          */
+  /*                                        */
+  /* ************************************** */
+
+  if (argc < 3)                                                                 /* Check usage and args */ 
+   {                                                               
+     fprintf(stderr, "USAGE: %s hostname port\n", argv[0]);                     /* Display error message */ 
+     exit(0);
+   }
+
+}
+
+
+void
+createSocket()
+{
+  /* ************************************** */
+  /*                                        */
+  /*            Create Socket               */
+  /*                                        */
+  /* ************************************** */
+
+  socketFD = socket(AF_INET, SOCK_STREAM, 0);                                   /* Create a socket */
+
+  if (socketFD < 0) {                                                           /* Check if there was an issue creating a socket */
+
+    error("CLIENT: ERROR opening socket");                                      /* Error message */
+
   }
+}
+
+
+void
+makeSocketReusableAndConnect(struct sockaddr_in serverAddress)
+{
+  /* ********************************************** */
+  /*                                                */
+  /*  Making Socket Resuable and Connect to Server  */
+  /*                                                */
+  /* ********************************************** */
 
   /* Reference: https://beej.us/guide/bgnet/html/#setsockoptman */
 	int yes = 1;
-	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));                        /* Make socket reusable */
+	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));            /* Make socket reusable */
 
-	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {     /* Connect socket to the server */
-		error("CLIENT: ERROR connecting");
-	}
-
-	int length_of_file = number_of_characters(argv[1]);                      /* Get length of the plaintext */
-	int length_of_key = number_of_characters(argv[2]);                       /* Get length of the key */
-
-	if (length_of_file > length_of_key) {                                    /* Check if the plaintext length is greater than the key length */
-		fprintf(stderr, "Key is too short\n!");
-		exit(1);
-	}
-	
-	char* client_msg = "Hello, from enc_client!";                         /* Send confirmation message to server */
-	charsWritten = send(socketFD, client_msg, strlen(client_msg), 0);     /* Sending message to server for confirmation */
-	clearBuffer(buffer);                                                  /* Clear out the buffer array */
-
-	if (charsWritten < 0) {                                               /* If no message has been received from the server */
-		error("CLIENT: ERROR writing to socket");                           /* Print the error */
+ 
+  if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0)     /* Connect to server */
+  {
+    error("CLIENT: ERROR connecting");                                          /* Display error message */
   }
 
-	charsRead = 0;
-	while(charsRead == 0) {                                               /* Get ack response from server */
-		charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);          /* Read response from server */
-  }
-
-	if (charsRead < 0) {                                                  /* If nothing was returned from the server, print error message */
-    error("CLIENT: ERROR reading from socket");
-  }
-
-	if (strcmp(buffer, unsuccessful) == 0) {                                                                 /* Check the connection */
-		fprintf(stderr, "Failed. enc_client attempted to connect to dec_server port #: %d\n", atoi(argv[3]));  /* Error message */
-		exit(2);                                                                                               /* Exit on status #2 per program requirement */
-	}
-
-	clearBuffer(buffer);                                                   /* Clear out the buffer array */
-	sprintf(buffer, "%d", length_of_file);                                 /* Print the length of the buffer file */
-	charsWritten = send(socketFD, buffer, sizeof(buffer), 0);              /* Send the file length of the buffer */
-	clearBuffer(buffer);                                                   /* Clear out the buffer array */
-
-	charsRead = 0;
-	while (charsRead == 0) {                                                
-		charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);           /* Receive the response aka read the data from the socket */
-  }
-	
-	if (strcmp(buffer, synchronizedAck) == 0) {                             
-		file_descriptor = open(argv[1], 'r');                                /* Open the plaintext file */
-		charsWritten = 0;
-
-		while(charsWritten <= length_of_file) {
-			clearBuffer(buffer);                                               /* Clear out the buffer array */
-			int bytesRead = read(file_descriptor, buffer, sizeof(buffer) - 1); /* Gather the size of the file */              
-			charsWritten += send(socketFD, buffer, strlen(buffer), 0);         /* Send the buffer file to the server */
-			clearBuffer(buffer);                                               /* Clear the buffer array */
-		}
-
-		file_descriptor = open(argv[2], 'r');                                /* Open the key file */
-		charsWritten = 0;
-
-		while(charsWritten <= length_of_file) {
-			clearBuffer(buffer);                                               /* Clear out the buffer array */
-			int bytesRead = read(file_descriptor, buffer, sizeof(buffer) - 1); /* Gather the size of the file */
-			charsWritten += send(socketFD, buffer, strlen(buffer), 0);         /* Send the buffer file to server */
-			clearBuffer(buffer);                                               /* Clear buffer array */
-		}
-	}
-
-	clearBuffer(buffer);                                                   /* Clear out the buffer array */
-
-
-	charsRead = 0;                                                         /* Resetted for receiving the message */ 
-	int charsSent = 0;
-
-	while (charsRead < length_of_file) {
-		clearBuffer(buffer);                                                 /* Clear the buffer array */
-		charsSent = recv(socketFD, buffer, sizeof(buffer)-1, 0);             /* Read data from socket */
-		charsRead += charsSent;
-		charsSent = 0;                                                      
-		strcat(ciphertext, buffer);                                          /* Copy the content of the buffer to ciphertext by concatenating */
-		clearBuffer(buffer);                                                 /* Clear the buffer array */
-	}
-
-	strcat(ciphertext, "\n");                                              /* Append new line to the ciphertext by concatenating */
-	printf("%s", ciphertext);                                              /* Prints the ciphertext */
-	close(socketFD);                                                       /* Close the socket */
-
-	return 0;
 }
 
 
+void checkBadCharacters(const char* filename)                                    /* Function to check for bad characters */ 
+{    
+  /* ************************************** */
+  /*                                        */
+  /*        Check for Bad Characters        */
+  /*                                        */
+  /* ************************************** */
+
+  FILE* file = fopen(filename, "r");                                            /* Open the plaintext file */
+
+  if (file == NULL)                                                             /* Extra measure to check if the file is empty */
+  {
+    exit(0);
+  }
+  
+  char ch;                                                                      /* To hold characters */
+
+  while ((ch = fgetc(file)) != EOF) {                                           /* Start checking the characters */
+
+    if (ch != ' ' && ch != '\n' && (ch < 'A' || ch > 'Z')) {                    /* If the character is not a space or A-Z */
+      fprintf(stderr, "Stop right there, criminal scum! Your plaintext file contains bad characters!\n");    /* Copyrighted by 2023 ZeniMax Media Inc. All Rights Reserved. Quote was taken from the imperial 
+                                                                                                                    guard in the game. Reference: https://elderscrolls.bethesda.net/en/oblivion */
+      fclose(file);                                                             /* Close file */
+      exit(1);
+
+    }
+  }
+  
+  fclose(file);                                                                 /* File is good to go! Close the file */
+}
+
+
+void 
+checkFileLength(const char* plaintext, const char* key)                         /* Function to count how many characters are in each file (plaintext and key) */
+{        
+  /* ************************************** */
+  /*                                        */
+  /*    Calculating How Many Characters     */
+  /*           Are In Each File             */
+  /*                                        */
+  /* ************************************** */
+
+  FILE* plaintextFile = fopen(plaintext, "r");                                  /* Open plaintext file */
+  FILE* keyFile = fopen(key, "r");                                              /* Open key file */
+
+  int ch;                                                                       /* For holding characters */
+
+
+  while ((ch = fgetc(plaintextFile)) != EOF && ch != '\n') {                    /* Count cheacters in the plaintext file */
+      plaintextLength++;
+  }
+
+  while ((ch = fgetc(keyFile)) != EOF && ch != '\n') {                          /* Count cheacters in the key file */
+      keyLength++;
+  }
+
+  fclose(plaintextFile);                                                        /* Close the plaintext file */
+  fclose(keyFile);                                                              /* Close the key file */
+
+  if (keyLength < plaintextLength)                                              /* Check if the plaintext file is larger than the key */
+  {
+      fprintf(stderr, "CLIENT: ERROR, key is shorter than plaintext!\n");       /* Error message */
+      exit(1);
+  }
+}
+
+
+int
+resetBytesReceived() 
+{
+  /* ************************************** */
+  /*                                        */
+  /*       Resetting Bytes Received         */
+  /*                                        */
+  /* ************************************** */
+  return 0;                                                                     /* Reset bytes received */
+
+}
+
+
+int 
+resetBytesSent() 
+{
+  /* ************************************** */
+  /*                                        */
+  /*         Resetting Byes Sent            */ 
+  /*                                        */
+  /* ************************************** */
+  return 0;                                                                     /* Reset bytes sent */
+
+}
+
+
+void 
+sendFiles(char *argv[], int socketFD, long lengthOfBuffer)
+{
+
+  char* plaintext = argv[1];
+  char* key = argv[2];
+  char buffer[BUFFER_SIZE]; 
+  int bytesSent = resetBytesSent(), length = lengthOfBuffer - 1, value;
+  FILE *file_descriptor;
+
+  file_descriptor = fopen(plaintext, "rb");                                     /* Open plaintext file for reading */
+
+  /* ************************************** */
+  /*                                        */
+  /*        SENDING PLAINTEXT FILE          */
+  /*                                        */
+  /* ************************************** */
+
+  while (bytesSent < plaintextLength)                                           /* Send plaintext */
+  {
+    fread(buffer, 1, length, file_descriptor);
+    value = send(socketFD, buffer, length, 0);                                  /* Send the message */
+    bytesSent = value + bytesSent;
+
+    if (bytesSent == -1)                                                        /* Check if the server returned an error "-1" */
+    {
+      error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
+    }
+  }
+
+  fclose(file_descriptor);
+
+  //printf("8. Sent plaintext\n");
+
+
+  file_descriptor = fopen(key, "rb");                                           /* Open key file for reading */
+
+  /* ************************************** */
+  /*                                        */
+  /*           SENDING KEY FILE             */
+  /*                                        */
+  /* ************************************** */ 
+  //printf("9. Plaintext sent. Now sending key file to the server\n");
+
+  bytesSent = resetBytesSent();                                                 /* Reset bytesSent count */
+
+  while (bytesSent < plaintextLength)
+  {
+    fread(buffer, 1, length, file_descriptor);
+    value = send(socketFD, buffer, length, 0);                                  /* Send key to server */
+    bytesSent = bytesSent + value;
+
+    if (bytesSent == -1) {                                                      /* Check if the server returned an error "-1" */
+      error("CLIENT: ERROR writing key to socket");                             /* Print error message */
+    }
+  }
+
+  fclose(file_descriptor);
+
+  //printf("10. Key file sent");
+}
+
+
+void
+receiveCiphertext(int socketFD, char* buffer, long lengthOfBuffer, char* ciphertext)
+{
+
+  int bytesReceived, totalReceived = 0, length = lengthOfBuffer - 1;
+
+  /* ************************************** */
+  /*                                        */
+  /*          Receiving Ciphertext          */
+  /*                                        */
+  /* ************************************** */
+  //printf("11. Receiving the ciphertext from the server\n");
+  //bytesReceived = resetBytesReceived();
+  
+  //printf("Plaintext length: %d\n", plaintextLength);
+  while (totalReceived < plaintextLength) {
+    bytesReceived = recv(socketFD, buffer, length, 0);                          /* Receive the ciphertext */
+
+    if (bytesReceived < 0) {
+
+      error("ERROR reading ciphertext from socket");
+      break;
+    }
+
+    for (int i = 0; i < bytesReceived; i++) {
+
+      ciphertext[totalReceived + i] = buffer[i];                                /* Append Buffer to ciphertext */ 
+    }
+
+    totalReceived += bytesReceived;
+  }
+}
+
+
+void
+printCiphertext(char* ciphertext)
+{
+  /* ************************************** */
+  /*                                        */
+  /*          Printing Ciphertext           */
+  /*                                        */
+  /* ************************************** */
+  //printf("12. Printing the ciphertext\n");
+  printf("%s\n", ciphertext);                                                   /* Output the ciphertext */
+
+}
+
+
+void 
+authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNumber, void* buffer, int portNumber)
+{
+  int length = BUFFER_SIZE - 1;
+  int size = sizeof(confirmPortNumber);
+  //printf("ENC_CLIENT port number: %s\n", confirmPortNumber);
+
+  /* ************************************** */
+  /*                                        */
+  /*      Authenticating Connection         */
+  /*                                        */
+  /* ************************************** */
+  //printf("3. Sending port number to server for confirmation\n");
+  charsWritten = send(socketFD, confirmPortNumber, size, 0);                    /* Send port number to the server to begin three way handshake */
+
+  if (charsWritten < 0) {
+    error("CLIENT: ERROR writing to server");                                   /* Print error message */ 
+  }
+  
+  // Receivce SYNACK from server
+  charsRead = recv(socketFD, buffer, length, 0);                                /* Receive a SYNACK from the server */
+
+  if (charsRead < 0) {
+    error("CLIENT: ERROR reading from socket");
+  }
+
+  // If returned buffer is not "SYNACK", exit on 2
+  if (strcmp(buffer, "-1") == 0) 
+  {
+    fprintf(stderr, "Failed. enc_client attempted to connect to dec_server port #: %d\n", portNumber);
+    exit(2);
+  }
+
+}
+
+
+void
+clearBuffer(char* buffer) 
+{
+  /* ************************************** */
+  /*                                        */
+  /*      Clearing the Buffer Array         */
+  /*                                        */
+  /* ************************************** */
+
+  memset(buffer, '\0', BUFFER_SIZE);                                            /* Clear buffer array */
+
+}
+
+
+void
+handshake(int socketFD, void* buffer, long bufferLength)
+{
+  int length = bufferLength - 1; 
+
+  /* ************************************** */
+  /*                                        */
+  /*      Completing 3-Way Handshake        */
+  /*                                        */
+  /* ************************************** */
+
+  //printf("4. Getting length of plaintext and save it to the buffer\n");
+  snprintf(buffer, sizeof(buffer), "%d", plaintextLength);
+
+  //printf("5. Sending the file length to the server\n");
+  charsWritten = send(socketFD, buffer, length, 0);
+  clearBuffer(buffer);
+
+  if (charsWritten < 0) 
+  {
+    error("CLIENT: ERROR sending to server");
+  }
+
+  //printf("6. Receiving a response from the server after sending buffer size\n");
+  recv(socketFD, buffer, length, 0);
+
+}
+
+
+int main(int argc, char *argv[]) {
+
+  int portNumber = atoi(argv[3]);
+  struct sockaddr_in serverAddress;
+  char buffer[256];
+  char ciphertext[70010];
+  char* confirmPortNumber = argv[3];
+  char host[10] = "localhost";
+  //printf("ENC_CLIENT ARGS: %s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
+  //printf("ENC_CLIENT Server port: %d\n", serverAddress.sin_port);
+
+  checkPort(argc, argv);                                                        /* Check to see if we have less than 3 arguments before proceeding to creating a socket */
+
+  //printf("1. Counting plaintext and key file\n");
+  checkFileLength(argv[1], argv[2]);                                            /* Check file length */
+
+  //printf("2. Checking for bad characters\n");
+  checkBadCharacters(argv[1]);                                                  /* Check for bad characters */
+ 
+  createSocket();                                                               /* Create Socket */
+
+  setupAddressStruct(&serverAddress, portNumber, host);                         /* Set up the server address struct */
+
+  makeSocketReusableAndConnect(serverAddress);
+  
+  authenticate(socketFD, serverAddress, confirmPortNumber, buffer, portNumber);   /* Authenticate the connection with the server */
+  
+  handshake(socketFD, buffer, BUFFER_SIZE);                                     /* Complete the handshake after authenticating with the server */
+ 
+  if (strcmp(buffer, "ACK") == 0) {
+    
+    sendFiles(argv, socketFD, BUFFER_SIZE);                                     /* If server is authenticated, send the files to the server */
+   
+  }
+
+  receiveCiphertext(socketFD, buffer, BUFFER_SIZE, ciphertext);                 /* Receive the ciphertext */
+  printCiphertext(ciphertext);
+
+  close(socketFD);                                                              /* Close the socket */
+
+  return 0;
+}
