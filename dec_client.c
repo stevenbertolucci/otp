@@ -160,16 +160,15 @@ resetBytesSent()
 
 
 void 
-sendFiles(char *argv[], int socketFD, long lengthOfBuffer)
+sendCiphertextFile(char *argv[], int socketFD, long lengthOfBuffer)
 {
 
-  char* ciphertext = argv[1];
-  char* key = argv[2];
+  char* plaintext = argv[1];
   char buffer[BUFFER_SIZE]; 
   int bytesSent = resetBytesSent(), length = lengthOfBuffer - 1, value;
   FILE *file_descriptor;
-
-  file_descriptor = fopen(ciphertext, "rb");                                    /* Open ciphertext file for reading */
+  
+  file_descriptor = fopen(plaintext, "rb");                                     /* Open plaintext file for reading */
 
   /* ************************************** */
   /*                                        */
@@ -177,7 +176,7 @@ sendFiles(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < ciphertextLength)                                          /* Send ciphertext */
+  while (bytesSent < ciphertextLength)                                           /* Send plaintext */
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -185,41 +184,52 @@ sendFiles(char *argv[], int socketFD, long lengthOfBuffer)
 
     if (bytesSent == -1)                                                        /* Check if the server returned an error "-1" */
     {
-      error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
+      error("CLIENT: ERROR writing ciphertext to socket");                       /* Error message when sending message to server */ 
     }
   }
 
   fclose(file_descriptor);
 
-  //printf("8. Sent plaintext\n");
+  //printf("8. Sent ciphertext\n");
 
 
-  file_descriptor = fopen(key, "rb");                                           /* Open key file for reading */
+}
+
+
+void 
+sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
+{
+
+  char* key = argv[2];
+  char buffer[BUFFER_SIZE]; 
+  int bytesSent = resetBytesSent(), length = lengthOfBuffer - 1, value;
+  FILE *file_descriptor;
+  
+  file_descriptor = fopen(key, "rb");                                             /* Open plaintext file for reading */
 
   /* ************************************** */
   /*                                        */
-  /*           SENDING KEY FILE             */
+  /*        SENDING KEY FILE                */
   /*                                        */
-  /* ************************************** */ 
-  //printf("9. Plaintext sent. Now sending key file to the server\n");
+  /* ************************************** */
 
-  bytesSent = resetBytesSent();                                                 /* Reset bytesSent count */
-
-  while (bytesSent < ciphertextLength)
+  while (bytesSent < ciphertextLength)                                           /* Send plaintext */
   {
     fread(buffer, 1, length, file_descriptor);
-    value = send(socketFD, buffer, length, 0);                                  /* Send key to server */
-    bytesSent = bytesSent + value;
+    value = send(socketFD, buffer, length, 0);                                  /* Send the message */
+    bytesSent = value + bytesSent;
 
-    if (bytesSent == -1) {                                                      /* Check if the server returned an error "-1" */
-      error("CLIENT: ERROR writing key to socket");                             /* Print error message */
+    if (bytesSent == -1)                                                        /* Check if the server returned an error "-1" */
+    {
+      error("CLIENT: ERROR writing key  to socket");                            /* Error message when sending message to server */ 
     }
   }
 
   fclose(file_descriptor);
 
-  //printf("10. Key file sent");
-}
+  //printf("8. Sent key\n");
+}                                     
+
 
 void
 receivePlaintext(int socketFD, char* buffer, long lengthOfBuffer, char* plaintext)
@@ -372,7 +382,9 @@ int main(int argc, char *argv[]) {
 
   if (strcmp(buffer, "ACK") == 0) {
 
-    sendFiles(argv, socketFD, BUFFER_SIZE);                                     /* If server is authenticated, send the files to the server */
+    /* If server is authenticated, send the files to the server */
+    sendCiphertextFile(argv, socketFD, BUFFER_SIZE);
+    sendKeyFile(argv, socketFD, BUFFER_SIZE);
 
   }
 
