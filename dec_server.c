@@ -9,6 +9,18 @@
 //   again to dec_client.
 // --------------------------------------------------------------------------------------------------------
 
+/* ##################################################################################################### */
+/* #                                                                                                   # */
+/* #                               !! NOTICE OF REUSED CODE !!!                                        # */
+/* #                                                                                                   # */
+/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
+/* #     was in the modules and provided stater code like setupAddressStruct(), socket(), bind(),      # */
+/* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
+/* #     written by me with the help of Linux man page and the textbook.                               # */
+/* #                                                                                                   # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +32,7 @@
 
 #define BUFFER_SIZE 256
 int charsRead;
+int listenSocket;
 
 void 
 error(const char *msg)                                                                      /* Error handling function */
@@ -37,6 +50,57 @@ setupAddressStruct(struct sockaddr_in* address, int portNumber)
     address->sin_family = AF_INET;                                                          /* The address should be network capable */
     address->sin_port = htons(portNumber);                                                  /* Store the port number */
     address->sin_addr.s_addr = INADDR_ANY;                                                  /* Allow a client at any address to connect to this server */
+}
+
+
+void 
+checkArgs(int argc, char *argv[])
+{
+
+  if (argc < 2) {                                                                                     /* Check usage & args */
+
+    fprintf(stderr, "USAGE: %s port\n", argv[0]);                                                     /* Print error */
+    exit(1);
+
+  }
+}
+
+
+void 
+createSocket()
+{
+  listenSocket = socket(AF_INET, SOCK_STREAM, 0);                                                     /* Create the socket that will listen for connections */
+
+  if (listenSocket < 0) 
+  {
+
+    error("ERROR opening socket");                                                                    /* Print error */
+
+  }
+}
+
+
+void 
+bindSocket(int socket, struct sockaddr_in* serverAddress) {
+
+    if (bind(socket, (struct sockaddr *)serverAddress, sizeof(*serverAddress)) < 0) {             
+        error("ERROR on binding");
+    }
+}
+
+
+int
+acceptConnection(int listenSocket, struct sockaddr_in* clientAddress, socklen_t* sizeOfClientInfo) {
+
+  int connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, sizeOfClientInfo);    /* Accept the connection */
+    
+  if (connectionSocket < 0) {                                                         /* Check for connectionn error */
+
+    error("ERROR on accept");                                                         /* Print error message if there were accepting issues */
+
+  }
+
+  return connectionSocket;
 }
 
 
@@ -98,48 +162,28 @@ resetBytesReceived()
 
 int main(int argc, char *argv[]) {
 
-  int listenSocket, connectionSocket, buffer_length;
+  int connectionSocket, buffer_length;
   char* portNumber = "62311";
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
-  if (argc < 2) {                                                                                     /* Check usage & args */
+  checkArgs(argc, argv);                                                                    /* Check if there are enough required arguments */
 
-    fprintf(stderr, "USAGE: %s port\n", argv[0]);                                                     /* Print error */
-    exit(1);
-
-  }
-  
-  listenSocket = socket(AF_INET, SOCK_STREAM, 0);                                                     /* Create the socket that will listen for connections */
-
-  if (listenSocket < 0) 
-  {
-
-    error("ERROR opening socket");                                                                    /* Print error */
-
-  }
+  createSocket();                                                                           /* Create socket */
 
   setupAddressStruct(&serverAddress, atoi(argv[1]));                                                  /* Set up the address struct for the server socket */
 
-  if (bind(listenSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0) {             /* Associate the socket to the port */
-    error("ERROR on binding");
-  }
+  bindSocket(listenSocket, &serverAddress);
 
   listen(listenSocket, 5);                                                                            /* Start listening up to 5 connections */                           
   
   while(1) 
   {
-    connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);    /* Accept the connection */
+    connectionSocket = acceptConnection(listenSocket, &clientAddress, &sizeOfClientInfo);
 
-    if (connectionSocket < 0){                                                          /* Check for connection error */
-
-      error("ERROR on accept");                                                         /* Print error message if there were accepting issues */
-
-    }
-
-  //  printf("13. SERVER: Connected to client running at host %d port %d\n", 
+    // printf("13. SERVER: Connected to client running at host %d port %d\n", 
     //       ntohs(clientAddress.sin_addr.s_addr),
-      //     ntohs(clientAddress.sin_port));
+    //       ntohs(clientAddress.sin_port));
 
     pid_t pid = fork();                                                                 /* Fork a process to handle multiple connections */
 

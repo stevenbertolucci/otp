@@ -9,6 +9,19 @@
 //   three ways. dec_client should NOT be able to connect to enc_server, even if it tries to connect on the 
 //   correct port - you’ll need to have the programs reject each other, as described in enc_client.
 // --------------------------------------------------------------------------------------------------------
+
+/* ##################################################################################################### */
+/* #                                                                                                   # */
+/* #                               !! NOTICE OF REUSED CODE !!!                                        # */
+/* #                                                                                                   # */
+/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
+/* #     was in the modules and provided stater code like setupAddressStruct(), socket(), bind(),      # */
+/* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
+/* #     written by me with the help of Linux man page and the textbook.                               # */
+/* #                                                                                                   # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

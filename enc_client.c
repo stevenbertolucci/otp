@@ -21,6 +21,18 @@
 //  Again, any and all error text must be output to stderr (not into the plaintext or ciphertext files).
 // --------------------------------------------------------------------------------------------------------
 
+/* ##################################################################################################### */
+/* #                                                                                                   # */
+/* #                               !! NOTICE OF REUSED CODE !!!                                        # */
+/* #                                                                                                   # */
+/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
+/* #     was in the modules and provided stater code like setupAddressStruct(), socket(), bind(),      # */
+/* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
+/* #     written by me with the help of Linux man page and the textbook.                               # */
+/* #                                                                                                   # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -37,6 +49,7 @@ int charsWritten;                                                               
 int plaintextLength = 0;                                                                /* Initialize count for the plaintext file */
 int keyLength = 0;                                                                      /* Initialize count for the key file */
 int socketFD;
+int totalLengthOfFile;
 
 void 
 error(const char *msg)                                                                  /* Error function used for reporting issues */
@@ -421,8 +434,7 @@ int main(int argc, char *argv[]) {
 
   int portNumber = atoi(argv[3]);
   struct sockaddr_in serverAddress;
-  char buffer[256];
-  char ciphertext[70010];
+  char buffer[256]; 
   char* confirmPortNumber = argv[3];
   char host[10] = "localhost";
   //printf("ENC_CLIENT ARGS: %s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);
@@ -432,6 +444,7 @@ int main(int argc, char *argv[]) {
 
   //printf("1. Counting plaintext and key file\n");
   checkFileLength(argv[1], argv[2]);                                            /* Check file length */
+  char ciphertext[plaintextLength];
 
   //printf("2. Checking for bad characters\n");
   checkBadCharacters(argv[1]);                                                  /* Check for bad characters */
