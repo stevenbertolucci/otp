@@ -2,6 +2,7 @@
 // Course: Operating System I
 // Assignment: otp
 // File: dec_client.c
+// Due Date: March 17, 2024
 // Description: 
 // --------------------------------------------------------------------------------------------------------
 //   This program will connect to dec_server and will ask it to decrypt ciphertext using a passed-in 
@@ -15,7 +16,7 @@
 /* #                               !! NOTICE OF REUSED CODE !!!                                        # */
 /* #                                                                                                   # */
 /* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
-/* #     was in the modules and provided stater code like setupAddressStruct(), socket(), bind(),      # */
+/* #     were in the modules and provided stater code like setupAddressStruct(), socket(), bind(),     # */
 /* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
 /* #     written by me with the help of Linux man page and the textbook.                               # */
 /* #                                                                                                   # */
@@ -31,14 +32,25 @@
 #include <netdb.h>
 #include <fcntl.h>
 
-#define BUFFER_SIZE 256
+/* ######################## */
+/*                          */
+/*     GLOBAL VARIABLES     */
+/*                          */
+/* ######################## */
 
+#define BUFFER_SIZE 256
 int charsRead;                                                                  /* Set charsRead as a global variable */
 int charsWritten;                                                               /* Set charsWritten as a global variable */
 int ciphertextLength = 0;                                                       /* Initialize count for the ciphertext file */
 int keyLength = 0;                                                              /* Initialize count for the key file */
 int socketFD;
 
+
+/* ##################################################################################################### */
+/* #                                                                                                   # */             
+/* #                              START OF FUNCTION DECLARATIONS                                       # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
 
 void 
 error(const char *msg)                                                          /* Error function used for reporting issues */
@@ -204,8 +216,6 @@ sendCiphertextFile(char *argv[], int socketFD, long lengthOfBuffer)
   fclose(file_descriptor);
 
   //printf("8. Sent ciphertext\n");
-
-
 }
 
 
@@ -288,9 +298,9 @@ printPlaintext(char* plaintext)
   /*          Printing Plaintext            */
   /*                                        */
   /* ************************************** */
-  //printf("12. Printing the ciphertext\n");
-  printf("%s\n", plaintext);                                                    /* Output the plaintext */
-
+  //printf("12. Printing the plaintext\n");
+  write(STDOUT_FILENO, plaintext, strlen(plaintext));                           /* Output the plaintext */
+  write(STDOUT_FILENO, "\n", 1);                                                /* Newline */
 }
 
 
@@ -301,6 +311,7 @@ authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNu
   int size = sizeof(confirmPortNumber);
   
   //printf("DEC_CLIENT port number: %s\n", confirmPortNumber);
+
   /* ************************************** */
   /*                                        */
   /*      Authenticating Connection         */
@@ -367,6 +378,11 @@ handshake(int socketFD, void* buffer, long bufferLength)
 
 }
 
+/* ##################################################################################################### */
+/* #                                                                                                   # */             
+/* #                               END OF FUNCTION DECLARATIONS                                        # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
 
 int main(int argc, char *argv[]) {
 

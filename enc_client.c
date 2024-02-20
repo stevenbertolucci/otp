@@ -2,6 +2,7 @@
 // Course: Operating System I
 // Assignment: otp
 // File: enc_client.c
+// Due Date: March 17, 2024
 // Description: 
 // --------------------------------------------------------------------------------------------------------
 //  This program connects to enc_server, and asks it to perform a one-time pad style encryption as 
@@ -26,7 +27,7 @@
 /* #                               !! NOTICE OF REUSED CODE !!!                                        # */
 /* #                                                                                                   # */
 /* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
-/* #     was in the modules and provided stater code like setupAddressStruct(), socket(), bind(),      # */
+/* #     were in the modules and provided stater code like setupAddressStruct(), socket(), bind(),     # */
 /* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
 /* #     written by me with the help of Linux man page and the textbook.                               # */
 /* #                                                                                                   # */
@@ -42,14 +43,26 @@
 #include <netdb.h>
 #include <fcntl.h>
 
-#define BUFFER_SIZE 256                                                                 /* Constant size for buffer */
+/* ######################## */
+/*                          */
+/*     GLOBAL VARIABLES     */
+/*                          */
+/* ######################## */
 
+#define BUFFER_SIZE 256                                                                 /* Constant size for buffer */
 int charsRead;                                                                          /* Set charsRead as a global variable */
 int charsWritten;                                                                       /* Set charsWritten as a gglobal variable */
 int plaintextLength = 0;                                                                /* Initialize count for the plaintext file */
 int keyLength = 0;                                                                      /* Initialize count for the key file */
 int socketFD;
 int totalLengthOfFile;
+
+
+/* ##################################################################################################### */
+/* #                                                                                                   # */             
+/* #                              START OF FUNCTION DECLARATIONS                                       # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
 
 void 
 error(const char *msg)                                                                  /* Error function used for reporting issues */
@@ -138,7 +151,8 @@ makeSocketReusableAndConnect(struct sockaddr_in serverAddress)
 }
 
 
-void checkBadCharacters(const char* filename)                                    /* Function to check for bad characters */ 
+void 
+checkBadCharacters(const char* filename)                                    /* Function to check for bad characters */ 
 {    
   /* ************************************** */
   /*                                        */
@@ -263,8 +277,6 @@ sendPlaintextFile(char *argv[], int socketFD, long lengthOfBuffer)
   fclose(file_descriptor);
 
   //printf("8. Sent plaintext\n");
-
-
 }
 
 
@@ -346,8 +358,8 @@ printCiphertext(char* ciphertext)
   /*                                        */
   /* ************************************** */
   //printf("12. Printing the ciphertext\n");
-  printf("%s\n", ciphertext);                                                   /* Output the ciphertext */
-
+  write(STDOUT_FILENO, ciphertext, strlen(ciphertext));                        /* Output the ciphertext */
+  write(STDOUT_FILENO, "\n", 1);                                               /* Newline */
 }
 
 
@@ -429,6 +441,11 @@ handshake(int socketFD, void* buffer, long bufferLength)
 
 }
 
+/* ##################################################################################################### */
+/* #                                                                                                   # */             
+/* #                               END OF FUNCTION DECLARATIONS                                        # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
 
 int main(int argc, char *argv[]) {
 

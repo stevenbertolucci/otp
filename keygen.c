@@ -2,6 +2,7 @@
 // Course: Operating System I
 // Assignment: otp
 // File: keygen.c
+// Due Date: March 17, 2024
 // Description: 
 // -----------------------------------------------------------------------------------------------
 //   This program creates a key file of specified length. The characters in the file generated 

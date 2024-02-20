@@ -2,6 +2,7 @@
 // Course: Operating System I
 // Assignment: otp
 // File: dec_server.c
+// Due Date: March 17, 2024
 // Description: 
 // --------------------------------------------------------------------------------------------------------
 //   This program performs exactly like enc_server, in syntax and usage. In this case, however, dec_server 
@@ -14,7 +15,7 @@
 /* #                               !! NOTICE OF REUSED CODE !!!                                        # */
 /* #                                                                                                   # */
 /* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
-/* #     was in the modules and provided stater code like setupAddressStruct(), socket(), bind(),      # */
+/* #     were in the modules and provided stater code like setupAddressStruct(), socket(), bind(),     # */
 /* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
 /* #     written by me with the help of Linux man page and the textbook.                               # */
 /* #                                                                                                   # */
@@ -30,9 +31,24 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 
+/* ######################## */
+/*                          */
+/*     GLOBAL VARIABLES     */
+/*                          */
+/* ######################## */
+
 #define BUFFER_SIZE 256
+#define SIZE 69335
+#define KEY_SIZE 70001
 int charsRead;
 int listenSocket;
+
+
+/* ##################################################################################################### */
+/* #                                                                                                   # */             
+/* #                              START OF FUNCTION DECLARATIONS                                       # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
 
 void 
 error(const char *msg)                                                                      /* Error handling function */
@@ -50,6 +66,15 @@ setupAddressStruct(struct sockaddr_in* address, int portNumber)
     address->sin_family = AF_INET;                                                          /* The address should be network capable */
     address->sin_port = htons(portNumber);                                                  /* Store the port number */
     address->sin_addr.s_addr = INADDR_ANY;                                                  /* Allow a client at any address to connect to this server */
+}
+
+
+void
+resetBytesReceived() 
+{
+
+  charsRead = 0;                                                                            /* Reset bytes received */
+
 }
 
 
@@ -81,7 +106,8 @@ createSocket()
 
 
 void 
-bindSocket(int socket, struct sockaddr_in* serverAddress) {
+bindSocket(int socket, struct sockaddr_in* serverAddress) 
+{
 
     if (bind(socket, (struct sockaddr *)serverAddress, sizeof(*serverAddress)) < 0) {             
         error("ERROR on binding");
@@ -90,7 +116,8 @@ bindSocket(int socket, struct sockaddr_in* serverAddress) {
 
 
 int
-acceptConnection(int listenSocket, struct sockaddr_in* clientAddress, socklen_t* sizeOfClientInfo) {
+acceptConnection(int listenSocket, struct sockaddr_in* clientAddress, socklen_t* sizeOfClientInfo) 
+{
 
   int connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, sizeOfClientInfo);    /* Accept the connection */
     
@@ -105,10 +132,151 @@ acceptConnection(int listenSocket, struct sockaddr_in* clientAddress, socklen_t*
 
 
 void 
+receiveCiphertext(int connectionSocket, char *ciphertext, int buffer_length)
+{
+  
+  int totalReceived = 0;
+  int bytesReceived = 0;
+  char buffer[BUFFER_SIZE];
+
+  /* ************************************ */
+  /*                                      */
+  /*        Receive Ciphertext File       */
+  /*                                      */
+  /* ************************************ */
+  while (totalReceived < buffer_length) 
+  {
+    bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);           /* Receive the ciphertext from the client */
+
+    if (bytesReceived < 0) {
+
+      error("ERROR reading ciphertext from socket");                                 /* Error message */
+
+    }
+
+    for (int i = 0; i < bytesReceived; i++) {
+
+      ciphertext[totalReceived + i] = buffer[i];                                     /* Save buffer content to ciphertext */
+
+    }
+
+    totalReceived += bytesReceived;              
+
+  }
+
+  //printf("Received ciphertext\n");
+}
+
+
+void 
+receiveKey(int connectionSocket, char *key, int buffer_length)
+{
+
+  int totalReceived = 0;
+  int bytesReceived = 0;
+  char buffer[BUFFER_SIZE];
+
+  /* ************************************* */
+  /*                                       */
+  /*           Receive Key File            */
+  /*                                       */
+  /* ************************************* */
+  //printf("Now reading in key\n");
+
+  while (totalReceived < buffer_length)
+  {
+    bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);            /* Receive the key from the client */
+
+    if (bytesReceived < 0) {
+
+      error("ERROR reading key from socket");                                         /* Print error message */
+
+    }
+
+    for (int i = 0; i < bytesReceived; i++) {
+
+      key[totalReceived + i] = buffer[i];                                             /* Save buffer content to key */
+
+    }
+
+    totalReceived += bytesReceived;
+
+  }
+
+  // printf("Received key\n");
+}
+
+
+int
+receive(int connectionSocket, char* buffer, int size)
+{
+  
+  charsRead = recv(connectionSocket, buffer, size, 0);
+
+  if (charsRead < 0)
+  {
+    error("ERROR reading from socket");
+  }
+
+
+  return charsRead;
+}
+
+
+int
+verify_connection(int connectionSocket, char* buffer, char* portNumber)
+{
+  int result;
+
+  if (strcmp(buffer, portNumber) != 0)
+  {
+    send(connectionSocket, "-1", strlen("-1"), 0);
+    result = 0;
+
+  } else {
+
+    result = 1;
+  }
+
+  return result;
+}
+
+
+void 
+sendPlaintextBack(int connectionSocket, char* plaintext, int buffer_length)
+{
+
+  /* ************************************** */
+  /*                                        */
+  /*          Sending Plaintext             */
+  /*                                        */
+  /* ************************************** */
+  //printf("Sending plaintext to client\n");
+  resetBytesReceived();                                                                     /* Reset count */
+
+  while (charsRead < buffer_length) 
+  {
+    charsRead += send(connectionSocket, plaintext, buffer_length, 0);                       /* Send the plaintext back to client */
+  }
+
+  if (charsRead < 0) {
+
+    error("ERROR writing plaintext to socket");                                             /* Print error if there was an issue sending the plaintext back to client */
+
+  }
+}
+
+
+void 
 decrypt(char* plaintext, const char* ciphertext, const char* key)                           /* Decrypt the message */
 {
-  int value, i;
+  /* ************************************** */
+  /*                                        */
+  /*          Decrypt Ciphertext            */
+  /*                                        */
+  /* ************************************** */
 
+  int value, i;
 
 	for (i = 0; ciphertext[i] != '\n'; i++)                                                   /* Loop through each characters and decrypt them */
   {		
@@ -147,18 +315,13 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
   }
 
 	plaintext[i] = '\0';                                                                      /* Append null terminator to the last byte */
-}                                                                      
+}    
 
-
-void
-resetBytesReceived() 
-{
-
-  charsRead = 0;                                                                            /* Reset bytes received */
-
-}
-
-
+/* ##################################################################################################### */
+/* #                                                                                                   # */             
+/* #                               END OF FUNCTION DECLARATIONS                                        # */
+/* #                                                                                                   # */
+/* ##################################################################################################### */
 
 int main(int argc, char *argv[]) {
 
@@ -171,11 +334,11 @@ int main(int argc, char *argv[]) {
 
   createSocket();                                                                           /* Create socket */
 
-  setupAddressStruct(&serverAddress, atoi(argv[1]));                                                  /* Set up the address struct for the server socket */
+  setupAddressStruct(&serverAddress, atoi(argv[1]));                                        /* Set up the address struct for the server socket */
 
   bindSocket(listenSocket, &serverAddress);
 
-  listen(listenSocket, 5);                                                                            /* Start listening up to 5 connections */                           
+  listen(listenSocket, 5);                                                                  /* Start listening up to 5 connections */                           
   
   while(1) 
   {
@@ -195,136 +358,36 @@ int main(int argc, char *argv[]) {
 
     if (pid == 0) {                                                                     /* Child process */
 
-      char plaintext[70010];
-      char key[70010];
-      char ciphertext[70010];
-      char buffer[256];
+      char plaintext[SIZE], key[KEY_SIZE], ciphertext[SIZE], buffer[BUFFER_SIZE];       /* Declare size of each array */
       charsRead = 0;
-      int totalReceived = 0;
-      int bytesReceived = 0;
-
 
       memset(plaintext, '\0', sizeof(plaintext));
       memset(key, '\0', sizeof(key));
       memset(ciphertext, '\0', sizeof(ciphertext));
       memset(buffer, '\0', sizeof(buffer));
 
-    
-      charsRead = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
+      receive(connectionSocket, buffer, sizeof(buffer) - 1);
 
-      if (charsRead < 0)
+      int result = verify_connection(connectionSocket, buffer, portNumber);
+
+      if (!result)
       {
-        error("ERROR reading from socket");
-      }
-
-      resetBytesReceived();
-
-      if (strcmp(buffer, portNumber) != 0)
-      {
-        send(connectionSocket, "-1", strlen("-1"), 0);
         exit(2);
 
       } else {
 
         send(connectionSocket, "SYNACK", strlen("SYNACK"), 0);
-
         recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
         send(connectionSocket, "ACK", strlen("ACK"), 0);
 
-
-
-        /* ************************************ */
-        /*                                      */
-        /*        Receive Ciphertext File       */
-        /*                                      */
-        /* ************************************ */
         buffer_length = atoi(buffer);
-
-        while (totalReceived < buffer_length) 
-        {
-          bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);       /* Receive the ciphertext from the client */
-
-          if (bytesReceived < 0) {
-
-            error("ERROR reading ciphertext from socket");                              /* Error message */
-
-          }
-
-          for (int i = 0; i < bytesReceived; i++) {
-
-            ciphertext[totalReceived + i] = buffer[i];                                  /* Save buffer content to ciphertext */
-
-          }
-
-          totalReceived += bytesReceived;              
-
-        }
-
-        //printf("Received ciphertext\n");
-
-
-        /* ************************************* */
-        /*                                       */
-        /*           Receive Key File            */
-        /*                                       */
-        /* ************************************* */
-
-        resetBytesReceived();
-        totalReceived = 0;
-        bytesReceived = 0;
-        //printf("Now reading in key\n");
-
-        while (totalReceived < buffer_length)
-        {
-          bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);       /* Receive the key from the client */
-
-          if (bytesReceived < 0) {
-
-            error("ERROR reading key from socket");                                     /* Print error message */
-
-          }
-
-          for (int i = 0; i < bytesReceived; i++) {
-
-            key[totalReceived + i] = buffer[i];                                         /* Save buffer content to key */
-
-          }
-
-          totalReceived += bytesReceived;
-
-        }
-
-        // printf("Received key\n");
-
-        /* ************************************** */
-        /*                                        */
-        /*          Decrypt Ciphertext            */
-        /*                                        */
-        /* ************************************** */
+        receiveCiphertext(connectionSocket, ciphertext, buffer_length);
+        receiveKey(connectionSocket, key, buffer_length);
 
         //printf("Now decrypting ciphertext\n");
         decrypt(plaintext, ciphertext, key);                                            /* Decrypt the ciphertext with the key and save it to plaintext */
 
-      
-        /* ************************************** */
-        /*                                        */
-        /*          Sending Plaintext             */
-        /*                                        */
-        /* ************************************** */
-        //printf("Sending plaintext to client\n");
-        //clearBuffer(buffer);
-        resetBytesReceived();                                                           /* Reset count */
-
-        while (charsRead < buffer_length) 
-        {
-          charsRead += send(connectionSocket, plaintext, sizeof(plaintext), 0);         /* Send the plaintext back to client */
-        }
-
-        if (charsRead < 0) {
-
-          error("ERROR writing plaintext to socket");                                   /* Print error if there was an issue sending the plaintext back to client */
-
-        }
+        sendPlaintextBack(connectionSocket, plaintext, sizeof(plaintext));              /* Send plaintext back to client */
       
         exit(0);
 
