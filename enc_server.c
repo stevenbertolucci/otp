@@ -273,6 +273,24 @@ verify_connection(int connectionSocket, char* buffer, char* portNumber)
 }
 
 
+void 
+sendRequest(int connectionSocket, char* request)
+{
+
+   send(connectionSocket, request, strlen(request), 0);
+
+}
+
+
+void 
+receiveResponse(int connectionSocket, char* buffer, int size_of_buffer)
+{
+
+  recv(connectionSocket, buffer, size_of_buffer, 0);
+
+}
+
+
 
 void 
 encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Function encrypt to encrypt the plaintext with the key  */
@@ -370,16 +388,17 @@ int main(int argc, char *argv[]) {
       receive(connectionSocket, buffer, sizeof(buffer) - 1);
 
       int result = verify_connection(connectionSocket, buffer, portNumber);
+      int the_buffer_size = sizeof(buffer) - 1;
 
       if (!result)
       {
         exit(2);
 
       } else {
-
-        send(connectionSocket, "SYNACK", strlen("SYNACK"), 0);
-        recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
-        send(connectionSocket, "ACK", strlen("ACK"), 0);
+        
+        sendRequest(connectionSocket, "SYNACK");
+        receiveResponse(connectionSocket, buffer, the_buffer_size);
+        sendRequest(connectionSocket, "ACK");
 
         buffer_length = atoi(buffer);
         receivePlaintext(connectionSocket, plaintext, buffer_length);

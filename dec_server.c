@@ -268,6 +268,24 @@ sendPlaintextBack(int connectionSocket, char* plaintext, int buffer_length)
 
 
 void 
+sendRequest(int connectionSocket, char* request)
+{
+
+   send(connectionSocket, request, strlen(request), 0);
+
+}
+
+
+void 
+receiveResponse(int connectionSocket, char* buffer, int size_of_buffer)
+{
+
+  recv(connectionSocket, buffer, size_of_buffer, 0);
+
+}
+
+
+void 
 decrypt(char* plaintext, const char* ciphertext, const char* key)                           /* Decrypt the message */
 {
   /* ************************************** */
@@ -369,6 +387,7 @@ int main(int argc, char *argv[]) {
       receive(connectionSocket, buffer, sizeof(buffer) - 1);
 
       int result = verify_connection(connectionSocket, buffer, portNumber);
+      int the_buffer_size = sizeof(buffer) - 1;
 
       if (!result)
       {
@@ -376,9 +395,9 @@ int main(int argc, char *argv[]) {
 
       } else {
 
-        send(connectionSocket, "SYNACK", strlen("SYNACK"), 0);
-        recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
-        send(connectionSocket, "ACK", strlen("ACK"), 0);
+        sendRequest(connectionSocket, "SYNACK");
+        receiveResponse(connectionSocket, buffer, the_buffer_size);
+        sendRequest(connectionSocket, "ACK");
 
         buffer_length = atoi(buffer);
         receiveCiphertext(connectionSocket, ciphertext, buffer_length);

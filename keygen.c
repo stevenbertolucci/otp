@@ -30,7 +30,6 @@
 
 int main(int argc, char* argv[]) {
 
-  srand(time(0));
   int number = atoi(argv[1]);
   char key[number + 1];                         /* For null terminator */
   char* alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";  /* The accepted 26 characters plus space */
