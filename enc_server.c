@@ -117,7 +117,7 @@ createSocket()
 }
 
 void 
-bindSocket(int socket, struct sockaddr_in* serverAddress) 
+bindSocket(int socket, struct sockaddr_in* serverAddress)                                             /* Bind socket */
 {
 
     if (bind(socket, (struct sockaddr *)serverAddress, sizeof(*serverAddress)) < 0) {             
@@ -239,7 +239,7 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
 
 
 int 
-receive(int connectionSocket, char* buffer, int size)
+receive(int connectionSocket, char* buffer, int size)                   /* Function to receive messages */
 {
   
  charsRead = recv(connectionSocket, buffer, size, 0);
@@ -261,7 +261,7 @@ verify_connection(int connectionSocket, char* buffer, char* portNumber)
 
   if (strcmp(buffer, portNumber) != 0)
   {
-    send(connectionSocket, "-1", strlen("-1"), 0);
+    send(connectionSocket, "-1", strlen("-1"), 0);                      /* Send response to client to verify connectio */
     result = 0;
 
   } else {
@@ -277,7 +277,7 @@ void
 sendRequest(int connectionSocket, char* request)
 {
 
-   send(connectionSocket, request, strlen(request), 0);
+   send(connectionSocket, request, strlen(request), 0);                 /* Send message */
 
 }
 
@@ -286,7 +286,7 @@ void
 receiveResponse(int connectionSocket, char* buffer, int size_of_buffer)
 {
 
-  recv(connectionSocket, buffer, size_of_buffer, 0);
+  recv(connectionSocket, buffer, size_of_buffer, 0);                    /* Receive message */
 
 }
 
@@ -380,29 +380,31 @@ int main(int argc, char *argv[]) {
       char plaintext[SIZE], key[KEY_SIZE], ciphertext[SIZE], buffer[BUFFER_SIZE];       /* Declare size of each array */
       charsRead = 0;
 
+      // Initalize the arrays
       memset(plaintext, '\0', sizeof(plaintext));
       memset(key, '\0', sizeof(key));
       memset(ciphertext, '\0', sizeof(ciphertext));
       memset(buffer, '\0', sizeof(buffer));
 
-      receive(connectionSocket, buffer, sizeof(buffer) - 1);
+      receive(connectionSocket, buffer, sizeof(buffer) - 1);                            /* Receive message */
 
-      int result = verify_connection(connectionSocket, buffer, portNumber);
+      int result = verify_connection(connectionSocket, buffer, portNumber);             /* Verify connection */
       int the_buffer_size = sizeof(buffer) - 1;
 
       if (!result)
       {
-        exit(2);
+        exit(2);                                                                        /* If incorrect port is being used, exit */
 
       } else {
         
+        // Send/receive messages
         sendRequest(connectionSocket, "SYNACK");
         receiveResponse(connectionSocket, buffer, the_buffer_size);
         sendRequest(connectionSocket, "ACK");
 
         buffer_length = atoi(buffer);
-        receivePlaintext(connectionSocket, plaintext, buffer_length);
-        receiveKey(connectionSocket, key, buffer_length);
+        receivePlaintext(connectionSocket, plaintext, buffer_length);                   /* Receive plaintext */
+        receiveKey(connectionSocket, key, buffer_length);                               /* Receive key */
 
         //printf("Now encrypting plaintext\n");
         encrypt(ciphertext, plaintext, key);                                            /* Encrypt the plaintext with the key and save it to ciphertext */
