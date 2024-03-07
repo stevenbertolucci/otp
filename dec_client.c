@@ -332,7 +332,7 @@ authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNu
   }
 
   // If returned buffer is not "SYNACK", exit on 2
-  if (strcmp(buffer, "-1") == 0) 
+  if (strcmp(buffer, "SYNACK") != 0) 
   {
     fprintf(stderr, "Failed. dec_client attempted to connect to enc_server port #: %d\n", portNumber);
     exit(2);

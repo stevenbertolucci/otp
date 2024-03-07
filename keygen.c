@@ -27,9 +27,12 @@
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int main(int argc, char* argv[]) {
-
+  
+  srand(time(0) + getpid());                    /* Initialize random number generator using epoch time and process id so 
+                                                   that randomization will be harder to break */
   int number = atoi(argv[1]);
   char key[number + 1];                         /* For null terminator */
   char* alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";  /* The accepted 26 characters plus space */

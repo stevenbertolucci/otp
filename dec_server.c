@@ -230,7 +230,7 @@ verify_connection(int connectionSocket, char* buffer, char* portNumber)
 
   if (strcmp(buffer, portNumber) != 0)
   {
-    send(connectionSocket, "-1", strlen("-1"), 0);                                        /* Send message back to client to verify connection */
+    send(connectionSocket, "error", strlen("error"), 0);                                        /* Send message back to client to verify connection */
     result = 0;
 
   } else {
