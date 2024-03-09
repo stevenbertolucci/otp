@@ -402,9 +402,9 @@ int main(int argc, char *argv[]) {
         receiveResponse(connectionSocket, buffer, the_buffer_size);
         sendRequest(connectionSocket, "ACK");
  
-        int buffer_length = strtol(buffer, NULL, 10);                                   /* Convert string size to integer */
-        receivePlaintext(connectionSocket, plaintext, buffer_length);                   /* Receive plaintext */
-        receiveKey(connectionSocket, key, buffer_length);                               /* Receive key */
+        int length = strtol(buffer, NULL, 10);                                          /* Convert string size to integer */
+        receivePlaintext(connectionSocket, plaintext, length);                          /* Receive plaintext */
+        receiveKey(connectionSocket, key, length);                                      /* Receive key */
 
         //printf("Now encrypting plaintext\n");
         encrypt(ciphertext, plaintext, key);                                            /* Encrypt the plaintext with the key and save it to ciphertext */
