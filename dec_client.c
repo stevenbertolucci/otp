@@ -44,6 +44,7 @@ int charsWritten;                                                               
 int ciphertextLength = 0;                                                       /* Initialize count for the ciphertext file */
 int keyLength = 0;                                                              /* Initialize count for the key file */
 int socketFD;
+int result;
 
 
 /* ##################################################################################################### */
@@ -126,9 +127,10 @@ makeSocketReusableAndConnect(struct sockaddr_in serverAddress)
   /*                                                */
   /* ********************************************** */
 
+  /* *** THIS IS FROM THE MODULES AND THE PROVIDED LINK BELOW  *** */
   /* Reference: https://beej.us/guide/bgnet/html/#setsockoptman */
 	int yes = 1;
-	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));            /* Make socket reusable */
+	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));            /* Make socket reusable. THis is from the modules FYI */
 
  
   if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0)     /* Connect to server */
@@ -141,22 +143,22 @@ makeSocketReusableAndConnect(struct sockaddr_in serverAddress)
 void 
 getFileLength(const char* ciphertext)                                           /* Function to count how many characters are in each file (plaintext and key) */
 {
-    /* ************************************** */
-    /*                                        */
-    /*    Calculating How Many Characters     */
-    /*             Are In File                */
-    /*                                        */
-    /* ************************************** */
-    FILE* ciphertextFile = fopen(ciphertext, "rb");                             /* Open plaintext file */
+  /* ************************************** */
+  /*                                        */
+  /*    Calculating How Many Characters     */
+  /*             Are In File                */
+  /*                                        */
+  /* ************************************** */
+  FILE* ciphertextFile = fopen(ciphertext, "rb");                               /* Open plaintext file */
 
-    int ch;                                                                     /* For holding characters */
+  int ch;                                                                       /* For holding characters */
 
 
-    while ((ch = fgetc(ciphertextFile)) != EOF && ch != '\n') {                 /* Count cheacters in the plaintext file */
-        ciphertextLength++;
-    }
+  while ((ch = fgetc(ciphertextFile)) != EOF && ch != '\n') {                   /* Count cheacters in the plaintext file */
+      ciphertextLength++;
+  }
 
-    fclose(ciphertextFile);                                                     /* Close the plaintext file */
+  fclose(ciphertextFile);                                                       /* Close the plaintext file */
 }
 
 int
@@ -201,7 +203,7 @@ sendCiphertextFile(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < ciphertextLength)                                           /* Send plaintext */
+  while (bytesSent < ciphertextLength)                                          /* Send plaintext */
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -209,7 +211,7 @@ sendCiphertextFile(char *argv[], int socketFD, long lengthOfBuffer)
 
     if (bytesSent == -1)                                                        /* Check if the server returned an error "-1" */
     {
-      error("CLIENT: ERROR writing ciphertext to socket");                       /* Error message when sending message to server */ 
+      error("CLIENT: ERROR writing ciphertext to socket");                      /* Error message when sending message to server */ 
     }
   }
 
@@ -228,7 +230,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   int bytesSent = resetBytesSent(), length = lengthOfBuffer - 1, value;
   FILE *file_descriptor;
   
-  file_descriptor = fopen(key, "rb");                                             /* Open plaintext file for reading */
+  file_descriptor = fopen(key, "rb");                                           /* Open plaintext file for reading */
 
   /* ************************************** */
   /*                                        */
@@ -236,7 +238,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < ciphertextLength)                                           /* Send plaintext */
+  while (bytesSent < ciphertextLength)                                          /* Send plaintext */
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -351,19 +353,21 @@ clearBuffer(char* buffer)
 
 
 void
-handshake(int socketFD, void* buffer, long bufferLength)
+sendBufferSize(int socketFD, void* buffer, long bufferLength)
 {
-  int length = bufferLength - 1; 
-
   /* ************************************** */
   /*                                        */
-  /*      Completing 3-Way Handshake        */
+  /*      Send Buffer Size to Server        */
   /*                                        */
   /* ************************************** */
+  
+  int length = bufferLength - 1;
 
-  //printf("4. Getting length of plaintext and save it to the buffer\n");
-  snprintf(buffer, sizeof(buffer), "%d", ciphertextLength);
-
+  //printf("4. Getting length of ciphertext and save it to the buffer\n");
+  char bufferToSaveLength[256];
+  snprintf(bufferToSaveLength, sizeof(bufferToSaveLength), "%d", ciphertextLength);   /* Save the ciphertext length to buffer length */
+  strncpy((char*)buffer, bufferToSaveLength, bufferLength);                           /* Copy the buffer length to buffer */
+  
   //printf("5. Sending the file length to the server\n");
   charsWritten = send(socketFD, buffer, length, 0);
   clearBuffer(buffer);
@@ -374,7 +378,16 @@ handshake(int socketFD, void* buffer, long bufferLength)
   }
 
   //printf("6. Receiving a response from the server after sending buffer size\n");
-  recv(socketFD, buffer, length, 0);
+  recv(socketFD, buffer, length, 0); 
+
+}
+
+
+void
+checkAcknowledgment(void* buffer)
+{
+
+  result = strcmp(buffer, "ACK");
 
 }
 
@@ -403,13 +416,15 @@ int main(int argc, char *argv[]) {
 
   setupAddressStruct(&serverAddress, portNumber, host);                         /* Set up the server address struct */
 
-  makeSocketReusableAndConnect(serverAddress);
+  makeSocketReusableAndConnect(serverAddress);                                  /* Make socket reusable and connect */
   
   authenticate(socketFD, serverAddress, confirmServer, buffer, portNumber);     /* Authenticate the connection with the server */
 
-  handshake(socketFD, buffer, BUFFER_SIZE);                                     /* Complete the handshake after authenticating with the server */
+  sendBufferSize(socketFD, buffer, BUFFER_SIZE);                                /* Complete the handshake after authenticating with the server */
 
-  if (strcmp(buffer, "ACK") == 0) {
+  checkAcknowledgment(buffer);
+
+  if (result != 1) {
 
     /* If server is authenticated, send the files to the server */
     sendCiphertextFile(argv, socketFD, BUFFER_SIZE);

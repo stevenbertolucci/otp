@@ -261,7 +261,7 @@ verify_connection(int connectionSocket, char* buffer, char* portNumber)
 
   if (strcmp(buffer, portNumber) != 0)
   {
-    send(connectionSocket, "error", strlen("error"), 0);                      /* Send response to client to verify connection */
+    send(connectionSocket, "Wrong port, buddy!", strlen("Wrong port, buddy!"), 0);          /* Send response to client to verify connection */
     result = 0;
 
   } else {
@@ -342,7 +342,7 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
 int main(int argc, char *argv[]) {
 
-  int connectionSocket, buffer_length;
+  int connectionSocket;
   char* portNumber = argv[1];
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
@@ -401,8 +401,8 @@ int main(int argc, char *argv[]) {
         sendRequest(connectionSocket, "SYNACK");
         receiveResponse(connectionSocket, buffer, the_buffer_size);
         sendRequest(connectionSocket, "ACK");
-
-        buffer_length = atoi(buffer);
+ 
+        int buffer_length = strtol(buffer, NULL, 10);                                   /* Convert string size to integer */
         receivePlaintext(connectionSocket, plaintext, buffer_length);                   /* Receive plaintext */
         receiveKey(connectionSocket, key, buffer_length);                               /* Receive key */
 

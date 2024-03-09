@@ -56,6 +56,7 @@ int plaintextLength = 0;                                                        
 int keyLength = 0;                                                                      /* Initialize count for the key file */
 int socketFD;
 int totalLengthOfFile;
+int result;
 
 
 /* ##################################################################################################### */
@@ -138,9 +139,10 @@ makeSocketReusableAndConnect(struct sockaddr_in serverAddress)
   /*                                                */
   /* ********************************************** */
 
+  /* *** THIS IS FROM THE MODULES AND THE LINK BELOW! *** */
   /* Reference: https://beej.us/guide/bgnet/html/#setsockoptman */
 	int yes = 1;
-	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));            /* Make socket reusable */
+	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));            /* Make socket reusable. This is from the modules FYI */
 
  
   if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0)     /* Connect to server */
@@ -152,7 +154,7 @@ makeSocketReusableAndConnect(struct sockaddr_in serverAddress)
 
 
 void 
-checkBadCharacters(const char* filename)                                    /* Function to check for bad characters */ 
+checkBadCharacters(const char* filename)                                        /* Function to check for bad characters */ 
 {    
   /* ************************************** */
   /*                                        */
@@ -289,7 +291,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   int bytesSent = resetBytesSent(), length = lengthOfBuffer - 1, value;
   FILE *file_descriptor;
   
-  file_descriptor = fopen(key, "rb");                                     /* Open plaintext file for reading */
+  file_descriptor = fopen(key, "rb");                                            /* Open plaintext file for reading */
 
   /* ************************************** */
   /*                                        */
@@ -414,19 +416,22 @@ clearBuffer(char* buffer)
 
 
 void
-handshake(int socketFD, void* buffer, long bufferLength)
-{
-  int length = bufferLength - 1; 
+sendBufferSize(int socketFD, void* buffer, long bufferLength)
+{ 
 
   /* ************************************** */
   /*                                        */
-  /*      Completing 3-Way Handshake        */
+  /*      Send Buffer Size to Server        */
   /*                                        */
   /* ************************************** */
+  
+  int length = bufferLength - 1;
 
   //printf("4. Getting length of plaintext and save it to the buffer\n");
-  snprintf(buffer, sizeof(buffer), "%d", plaintextLength);
-
+  char bufferToSaveLength[256];
+  snprintf(bufferToSaveLength, sizeof(bufferToSaveLength), "%d", plaintextLength);    /* Save the plaintext length to buffer length */
+  strncpy((char*)buffer, bufferToSaveLength, bufferLength);                           /* Copy the buffer length to buffer */
+  
   //printf("5. Sending the file length to the server\n");
   charsWritten = send(socketFD, buffer, length, 0);
   clearBuffer(buffer);
@@ -438,6 +443,15 @@ handshake(int socketFD, void* buffer, long bufferLength)
 
   //printf("6. Receiving a response from the server after sending buffer size\n");
   recv(socketFD, buffer, length, 0);
+
+}
+
+
+void
+checkAcknowledgment(void* buffer)
+{
+
+  result = strcmp(buffer, "ACK");
 
 }
 
@@ -470,13 +484,15 @@ int main(int argc, char *argv[]) {
 
   setupAddressStruct(&serverAddress, portNumber, host);                         /* Set up the server address struct */
 
-  makeSocketReusableAndConnect(serverAddress);
+  makeSocketReusableAndConnect(serverAddress);                                  /* Make socket reuseable */
   
-  authenticate(socketFD, serverAddress, confirmPortNumber, buffer, portNumber);   /* Authenticate the connection with the server */
+  authenticate(socketFD, serverAddress, confirmPortNumber, buffer, portNumber); /* Authenticate the connection with the server */
   
-  handshake(socketFD, buffer, BUFFER_SIZE);                                     /* Complete the handshake after authenticating with the server */
+  sendBufferSize(socketFD, buffer, BUFFER_SIZE);                                /* Complete the handshake after authenticating with the server */
+
+  checkAcknowledgment(buffer);
  
-  if (strcmp(buffer, "ACK") == 0) {
+  if (result != 1) {
     
     /* If server is authenticated, send the files to the server */
     sendPlaintextFile(argv, socketFD, BUFFER_SIZE);

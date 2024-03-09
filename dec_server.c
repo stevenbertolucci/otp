@@ -230,7 +230,7 @@ verify_connection(int connectionSocket, char* buffer, char* portNumber)
 
   if (strcmp(buffer, portNumber) != 0)
   {
-    send(connectionSocket, "error", strlen("error"), 0);                                        /* Send message back to client to verify connection */
+    send(connectionSocket, "Wrong port, buddy!", strlen("Wrong port, buddy!"), 0);                                        /* Send message back to client to verify connection */
     result = 0;
 
   } else {
@@ -344,7 +344,7 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
 int main(int argc, char *argv[]) {
 
   // Variables
-  int connectionSocket, buffer_length;
+  int connectionSocket;
   char* portNumber = "62311";
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
@@ -402,7 +402,7 @@ int main(int argc, char *argv[]) {
         receiveResponse(connectionSocket, buffer, the_buffer_size);
         sendRequest(connectionSocket, "ACK");
 
-        buffer_length = atoi(buffer);
+        int buffer_length = strtol(buffer, NULL, 10);                                   /* Convert string size to integer */
         receiveCiphertext(connectionSocket, ciphertext, buffer_length);                 /* Receive ciphertext */
         receiveKey(connectionSocket, key, buffer_length);                               /* Receive key */
 
