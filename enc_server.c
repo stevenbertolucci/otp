@@ -155,7 +155,7 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
   /*                                      */
   /* ************************************ */
 
-  do
+  while(1)
   {
     bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);       /* Receive the plaintext from the client */
         
@@ -169,7 +169,12 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
     }
 
     totalReceived += bytesReceived;
-  } while (totalReceived < buffer_length);
+
+    if (totalReceived >= buffer_length)
+    {
+      break;
+    }
+  } 
 
   //printf("Received plaintext\n");
 }
@@ -190,7 +195,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
   /* ************************************* */
   //printf("Now reading in key\n");
 
-  do
+  while(1)
   {
     bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
           
@@ -207,7 +212,11 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
 
     totalReceived += bytesReceived;
 
-  } while (totalReceived < buffer_length);
+    if (totalReceived >= buffer_length)
+    {
+      break;
+    }
+  }
 
   //printf("Received key\n");
 }
@@ -225,15 +234,20 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
   //printf("Sending ciphertext to client\n");
   resetBytesReceived();                                                           /* Reset count */
 
-  do
+  while(1)
   {
     charsRead += send(connectionSocket, ciphertext, buffer_length, 0);            /* Send the ciphertext back to client */
-  } while (charsRead < buffer_length);
 
-  if (charsRead < 0) {
+    if (charsRead < 0) {
 
-    error("ERROR writing ciphertext to socket");                                  /* Print error if there was an issue sending the ciphertext back to client */
+        error("ERROR writing ciphertext to socket");                                  /* Print error if there was an issue sending the ciphertext back to client */
 
+    }
+
+    if (charsRead >= buffer_length)
+    {
+      break;
+    }
   }
 }
 

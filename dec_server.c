@@ -145,7 +145,7 @@ receiveCiphertext(int connectionSocket, char *ciphertext, int buffer_length)
   /*                                      */
   /* ************************************ */
 
-  do
+  while(1)
   {
     bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);           /* Receive the ciphertext from the client */
 
@@ -162,8 +162,11 @@ receiveCiphertext(int connectionSocket, char *ciphertext, int buffer_length)
     }
 
     totalReceived += bytesReceived;              
-
-  } while (totalReceived < buffer_length);
+    
+    if (totalReceived >= buffer_length) {
+      break;
+    }
+  } 
 
   //printf("Received ciphertext\n");
 }
@@ -184,7 +187,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
   /* ************************************* */
   //printf("Now reading in key\n");
 
-  do
+  while(1)
   {
     bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);            /* Receive the key from the client */
 
@@ -201,8 +204,12 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
     }
 
     totalReceived += bytesReceived;
-
-  } while (totalReceived < buffer_length);
+    
+    if (totalReceived >= buffer_length) 
+    {
+      break;
+    }
+  } 
 
   // printf("Received key\n");
 }
@@ -255,16 +262,21 @@ sendPlaintextBack(int connectionSocket, char* plaintext, int buffer_length)
   //printf("Sending plaintext to client\n");
   resetBytesReceived();                                                                     /* Reset count */
 
-  do
+  while(1)
   {
     charsRead += send(connectionSocket, plaintext, buffer_length, 0);                       /* Send the plaintext back to client */
-  } while (charsRead < buffer_length);
-
-  if (charsRead < 0) {
+    
+    if (charsRead < 0) {
 
     error("ERROR writing plaintext to socket");                                             /* Print error if there was an issue sending the plaintext back to client */
 
-  } 
+    } 
+
+    if (charsRead >= buffer_length)
+    {
+      break;
+    }
+  }
 }
 
 

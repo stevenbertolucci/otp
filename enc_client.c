@@ -265,7 +265,7 @@ sendPlaintextFile(char *argv[], int socketFD, long lengthOfBuffer)
   /* ************************************** */
 
   /* Send plaintext */
-  do
+  while(1)
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -275,9 +275,14 @@ sendPlaintextFile(char *argv[], int socketFD, long lengthOfBuffer)
     {
       error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
     }
-  } while (bytesSent < plaintextLength);
+  
+    if (bytesSent >= plaintextLength)
+    {
+      fclose(file_descriptor);
+      break;
+    }
 
-  fclose(file_descriptor);
+  }
 
   //printf("8. Sent plaintext\n");
 }
@@ -301,7 +306,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   /* ************************************** */
 
   /* Send key */
-  do
+  while(1)
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -311,10 +316,14 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
     {
       error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
     }
-  } while (bytesSent < plaintextLength);
+  
 
-  fclose(file_descriptor);
-
+    if (bytesSent >= plaintextLength)
+    {
+      fclose(file_descriptor);
+      break;
+    }
+  }
   //printf("8. Sent key\n");
 }
 
@@ -334,7 +343,7 @@ receiveCiphertext(int socketFD, char* buffer, long lengthOfBuffer, char* ciphert
   //bytesReceived = resetBytesReceived();
   //printf("Plaintext length: %d\n", plaintextLength); 
 
-  do
+  while(1)
   {
     bytesReceived = recv(socketFD, buffer, length, 0);                          /* Receive the ciphertext */
 
@@ -350,7 +359,12 @@ receiveCiphertext(int socketFD, char* buffer, long lengthOfBuffer, char* ciphert
     }
 
     totalReceived += bytesReceived;
-  } while (totalReceived < plaintextLength);
+
+    if (totalReceived >= plaintextLength) 
+    {
+      break;
+    }
+  }
 }
 
 
