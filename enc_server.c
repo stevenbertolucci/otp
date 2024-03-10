@@ -53,7 +53,7 @@
 #define BUFFER_SIZE 256
 #define SIZE 69335
 #define KEY_SIZE 70001
-int charsRead;
+int charsRead, totalReceived, bytesReceived;
 int listenSocket;
 
 /* ##################################################################################################### */
@@ -81,12 +81,12 @@ setupAddressStruct(struct sockaddr_in* address, int portNumber)
 }
 
 
-void
-resetBytesReceived() 
+void 
+reset()                                                                  /* Reset count */
 {
-
-  charsRead = 0;                                                          /* Reset count */
-
+  totalReceived = 0;
+  bytesReceived = 0;
+  charsRead = 0;
 }
 
 
@@ -145,8 +145,7 @@ acceptConnection(int listenSocket, struct sockaddr_in* clientAddress, socklen_t*
 void 
 receivePlaintext(int connectionSocket, char *plaintext, int buffer_length) 
 {
-  int totalReceived = 0;
-  int bytesReceived = 0;
+  reset();
   char buffer[BUFFER_SIZE]; 
   
   /* ************************************ */
@@ -183,8 +182,7 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
 void 
 receiveKey(int connectionSocket, char *key, int buffer_length)
 {
-  int totalReceived = 0;
-  int bytesReceived = 0;
+  reset();
   char buffer[BUFFER_SIZE];
 
 
@@ -232,7 +230,7 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
   /*                                        */
   /* ************************************** */
   //printf("Sending ciphertext to client\n");
-  resetBytesReceived();                                                           /* Reset count */
+  reset();                                                                        /* Reset count */
 
   while(1)
   {
@@ -240,7 +238,7 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
 
     if (charsRead < 0) {
 
-        error("ERROR writing ciphertext to socket");                                  /* Print error if there was an issue sending the ciphertext back to client */
+        error("ERROR writing ciphertext to socket");                              /* Print error if there was an issue sending the ciphertext back to client */
 
     }
 
@@ -253,7 +251,7 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
 
 
 int 
-receive(int connectionSocket, char* buffer, int size)                   /* Function to receive messages */
+receive(int connectionSocket, char* buffer, int size)                             /* Function to receive messages */
 {
   
  charsRead = recv(connectionSocket, buffer, size, 0);
@@ -272,10 +270,11 @@ verify_connection(int connectionSocket, char* buffer, char* portNumber)
 {
 
   int result;
+  char message[19] = "Wrong port, buddy!";
 
   if (strcmp(buffer, portNumber) != 0)
   {
-    send(connectionSocket, "Wrong port, buddy!", strlen("Wrong port, buddy!"), 0);          /* Send response to client to verify connection */
+    send(connectionSocket, message, strlen(message), 0);                /* Send response to client to verify connection */
     result = 0;
 
   } else {
@@ -303,7 +302,6 @@ receiveResponse(int connectionSocket, char* buffer, int size_of_buffer)
   recv(connectionSocket, buffer, size_of_buffer, 0);                    /* Receive message */
 
 }
-
 
 
 void 

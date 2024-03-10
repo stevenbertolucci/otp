@@ -40,7 +40,7 @@
 #define BUFFER_SIZE 256
 #define SIZE 69335
 #define KEY_SIZE 70001
-int charsRead;
+int charsRead, totalReceived, bytesReceived;
 int listenSocket;
 
 
@@ -70,11 +70,11 @@ setupAddressStruct(struct sockaddr_in* address, int portNumber)
 
 
 void
-resetBytesReceived() 
+reset()
 {
-
-  charsRead = 0;                                                                            /* Reset bytes received */
-
+  totalReceived = 0;
+  bytesReceived = 0;
+  charsRead = 0;
 }
 
 
@@ -135,8 +135,7 @@ void
 receiveCiphertext(int connectionSocket, char *ciphertext, int buffer_length)
 {
   
-  int totalReceived = 0;
-  int bytesReceived = 0;
+  reset();
   char buffer[BUFFER_SIZE];
 
   /* ************************************ */
@@ -176,8 +175,7 @@ void
 receiveKey(int connectionSocket, char *key, int buffer_length)
 {
 
-  int totalReceived = 0;
-  int bytesReceived = 0;
+  reset();
   char buffer[BUFFER_SIZE];
 
   /* ************************************* */
@@ -235,10 +233,11 @@ int
 verify_connection(int connectionSocket, char* buffer, char* portNumber)
 {
   int result;
+  char message[19] = "Wrong port, buddy!";
 
   if (strcmp(buffer, portNumber) != 0)
   {
-    send(connectionSocket, "Wrong port, buddy!", strlen("Wrong port, buddy!"), 0);                                        /* Send message back to client to verify connection */
+    send(connectionSocket, message, strlen(message), 0);                                    /* Send message back to client to verify connection */
     result = 0;
 
   } else {
@@ -260,7 +259,7 @@ sendPlaintextBack(int connectionSocket, char* plaintext, int buffer_length)
   /*                                        */
   /* ************************************** */
   //printf("Sending plaintext to client\n");
-  resetBytesReceived();                                                                     /* Reset count */
+  reset();                                                                     /* Reset count */
 
   while(1)
   {

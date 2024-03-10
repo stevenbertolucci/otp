@@ -162,7 +162,7 @@ checkBadCharacters(const char* filename)                                        
   /*                                        */
   /* ************************************** */
 
-  FILE* file = fopen(filename, "r");                                            /* Open the plaintext file */
+  FILE* file = fopen(filename, "rb");                                           /* Open the plaintext file */
 
   if (file == NULL)                                                             /* Extra measure to check if the file is empty */
   {
@@ -175,7 +175,7 @@ checkBadCharacters(const char* filename)                                        
 
     if (ch != ' ' && ch != '\n' && (ch < 'A' || ch > 'Z')) {                    /* If the character is not a space or A-Z */
       fprintf(stderr, "Stop right there, criminal scum! Your plaintext file contains bad characters!\n");    /* Copyrighted by 2023 ZeniMax Media Inc. All Rights Reserved. Quote was taken from the imperial 
-                                                                                                                    guard in the game. Reference: https://elderscrolls.bethesda.net/en/oblivion */
+                                                                                                                    guard in the video game. Reference: https://elderscrolls.bethesda.net/en/oblivion */
       fclose(file);                                                             /* Close file */
       exit(1);
 
@@ -196,8 +196,8 @@ checkFileLength(const char* plaintext, const char* key)                         
   /*                                        */
   /* ************************************** */
 
-  FILE* plaintextFile = fopen(plaintext, "r");                                  /* Open plaintext file */
-  FILE* keyFile = fopen(key, "r");                                              /* Open key file */
+  FILE* plaintextFile = fopen(plaintext, "rb");                                 /* Open plaintext file */
+  FILE* keyFile = fopen(key, "rb");                                             /* Open key file */
 
   int ch;                                                                       /* For holding characters */
 
@@ -297,7 +297,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   int bytesSent = resetBytesSent(), length = lengthOfBuffer - 1, value;
   FILE *file_descriptor;
   
-  file_descriptor = fopen(key, "rb");                                            /* Open plaintext file for reading */
+  file_descriptor = fopen(key, "rb");                                           /* Open plaintext file for reading */
 
   /* ************************************** */
   /*                                        */
