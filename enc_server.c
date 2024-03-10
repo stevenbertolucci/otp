@@ -155,7 +155,7 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
   /*                                      */
   /* ************************************ */
 
-  while (totalReceived < buffer_length) 
+  do
   {
     bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);       /* Receive the plaintext from the client */
         
@@ -169,7 +169,7 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
     }
 
     totalReceived += bytesReceived;
-  }
+  } while (totalReceived < buffer_length);
 
   //printf("Received plaintext\n");
 }
@@ -190,7 +190,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
   /* ************************************* */
   //printf("Now reading in key\n");
 
-  while (totalReceived < buffer_length)
+  do
   {
     bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
           
@@ -207,7 +207,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
 
     totalReceived += bytesReceived;
 
-  }
+  } while (totalReceived < buffer_length);
 
   //printf("Received key\n");
 }
@@ -225,10 +225,10 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
   //printf("Sending ciphertext to client\n");
   resetBytesReceived();                                                           /* Reset count */
 
-  while (charsRead < buffer_length) 
+  do
   {
     charsRead += send(connectionSocket, ciphertext, buffer_length, 0);            /* Send the ciphertext back to client */
-  }
+  } while (charsRead < buffer_length);
 
   if (charsRead < 0) {
 

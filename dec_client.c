@@ -203,7 +203,8 @@ sendCiphertextFile(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < ciphertextLength)                                          /* Send plaintext */
+  /* Send ciphertext */
+  do
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -213,7 +214,7 @@ sendCiphertextFile(char *argv[], int socketFD, long lengthOfBuffer)
     {
       error("CLIENT: ERROR writing ciphertext to socket");                      /* Error message when sending message to server */ 
     }
-  }
+  } while (bytesSent < ciphertextLength);
 
   fclose(file_descriptor);
 
@@ -238,7 +239,8 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < ciphertextLength)                                          /* Send plaintext */
+  /* Send key */
+  do
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -248,7 +250,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
     {
       error("CLIENT: ERROR writing key  to socket");                            /* Error message when sending message to server */ 
     }
-  }
+  } while (bytesSent < ciphertextLength);
 
   fclose(file_descriptor);
 
@@ -271,7 +273,8 @@ receivePlaintext(int socketFD, char* buffer, long lengthOfBuffer, char* plaintex
   bytesReceived = resetBytesReceived();
   
   //printf("Ciphertext length: %d\n", ciphertextLength);
-  while (totalReceived < ciphertextLength) {
+  do
+  {
 
     bytesReceived = recv(socketFD, buffer, length, 0);                          /* Receive the plaintext */
 
@@ -289,7 +292,7 @@ receivePlaintext(int socketFD, char* buffer, long lengthOfBuffer, char* plaintex
 
     totalReceived += bytesReceived;
 
-  }
+  } while (totalReceived < ciphertextLength);
 }
 
 void

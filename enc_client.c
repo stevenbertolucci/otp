@@ -264,7 +264,8 @@ sendPlaintextFile(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < plaintextLength)                                           /* Send plaintext */
+  /* Send plaintext */
+  do
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -274,7 +275,7 @@ sendPlaintextFile(char *argv[], int socketFD, long lengthOfBuffer)
     {
       error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
     }
-  }
+  } while (bytesSent < plaintextLength);
 
   fclose(file_descriptor);
 
@@ -299,7 +300,8 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
   /*                                        */
   /* ************************************** */
 
-  while (bytesSent < plaintextLength)                                           /* Send plaintext */
+  /* Send key */
+  do
   {
     fread(buffer, 1, length, file_descriptor);
     value = send(socketFD, buffer, length, 0);                                  /* Send the message */
@@ -309,7 +311,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
     {
       error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
     }
-  }
+  } while (bytesSent < plaintextLength);
 
   fclose(file_descriptor);
 
@@ -330,9 +332,10 @@ receiveCiphertext(int socketFD, char* buffer, long lengthOfBuffer, char* ciphert
   /* ************************************** */
   //printf("11. Receiving the ciphertext from the server\n");
   //bytesReceived = resetBytesReceived();
-  
-  //printf("Plaintext length: %d\n", plaintextLength);
-  while (totalReceived < plaintextLength) {
+  //printf("Plaintext length: %d\n", plaintextLength); 
+
+  do
+  {
     bytesReceived = recv(socketFD, buffer, length, 0);                          /* Receive the ciphertext */
 
     if (bytesReceived < 0) {
@@ -347,7 +350,7 @@ receiveCiphertext(int socketFD, char* buffer, long lengthOfBuffer, char* ciphert
     }
 
     totalReceived += bytesReceived;
-  }
+  } while (totalReceived < plaintextLength);
 }
 
 
