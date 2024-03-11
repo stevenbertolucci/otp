@@ -325,7 +325,7 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
     if (c == ' ') {                                                     /* If space, save the space since it does not need to be encrypted */
 
-      ciphertext[i] = ' ';
+      ciphertext[i] = 26;
 
     } else {
 
@@ -334,9 +334,9 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
       int value = ((c + k) % 27);                                       /* Modulo operation using 27 characters */
 
-      if (value < 0) {                                                  /* If value is negative, add 27 */
+      if (value == 26) {                                                  /* If value is negative, add 27 */
 
-        value += 27;
+        value = ' ';
 
       }
 

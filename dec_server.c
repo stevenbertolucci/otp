@@ -318,7 +318,7 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
 
     if (c == ' ') {
 
-      plaintext[i] = ' ';
+      plaintext[i] = 26;
       
 
     } else {
@@ -326,7 +326,7 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
       c = (c - 65);
       k = (k - 65); 
 
-      value = ((c - k) % 27);                                                               /* Modulo 27 division */
+      value = (c - k);                                                               /* Modulo 27 division */
 
      if (value < 0) {
 
