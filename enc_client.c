@@ -22,17 +22,19 @@
 //  Again, any and all error text must be output to stderr (not into the plaintext or ciphertext files).
 // --------------------------------------------------------------------------------------------------------
 
-/* ##################################################################################################### */
-/* #                                                                                                   # */
-/* #                               !! NOTICE OF REUSED CODE !!!                                        # */
-/* #                                                                                                   # */
-/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
-/* #     were in the modules and provided stater code like setupAddressStruct(), socket(), bind(),     # */
-/* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
-/* #     written by me with the help of Linux man page and the textbook.                               # */
-/* #                                                                                                   # */
-/* #                                                                                                   # */
-/* ##################################################################################################### */
+/* #################################################################################################################################### */
+/* #                                                                                                                                  # */
+/* #                               !! NOTICE OF REUSED CODE !!!                                                                       # */
+/* #                                                                                                                                  # */
+/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those                                       # */
+/* #     were in the modules and provided stater code like setupAddressStruct(), setsockopt(),                                        # */ 
+/* #     socket(), bind(), listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All                                    # */
+/* #     other code is written by me with the help of Linux man page and the textbook.                                                # */
+/* #     The provided replit in the module to the client starter code link is below:                                                  # */
+/* #  https://replit.com/@cs344/83clientc?forkRepl=366f0aab-1aee-44e5-b608-4b4010774e5e&forkContext=coverPage&redirecting=1#client.c  # */
+/* #                                                                                                                                  # */
+/* #                                                                                                                                  # */
+/* #################################################################################################################################### */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -387,6 +389,7 @@ authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNu
 {
   int length = BUFFER_SIZE - 1;
   int size = sizeof(confirmPortNumber);
+  char message[7] = "SYNACK";
   //printf("ENC_CLIENT port number: %s\n", confirmPortNumber);
 
   /* ************************************** */
@@ -409,7 +412,7 @@ authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNu
   }
 
   // If returned buffer is not "SYNACK", exit on 2
-  if (strcmp(buffer, "SYNACK") != 0) 
+  if (strcmp(buffer, message) < 0 || strcmp(buffer, message) > 0) 
   {
     fprintf(stderr, "Failed. enc_client attempted to connect to dec_server port #: %d\n", portNumber);
     exit(2);

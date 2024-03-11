@@ -11,17 +11,19 @@
 //   correct port - you’ll need to have the programs reject each other, as described in enc_client.
 // --------------------------------------------------------------------------------------------------------
 
-/* ##################################################################################################### */
-/* #                                                                                                   # */
-/* #                               !! NOTICE OF REUSED CODE !!!                                        # */
-/* #                                                                                                   # */
-/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
-/* #     were in the modules and provided stater code like setupAddressStruct(), socket(), bind(),     # */
-/* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
-/* #     written by me with the help of Linux man page and the textbook.                               # */
-/* #                                                                                                   # */
-/* #                                                                                                   # */
-/* ##################################################################################################### */
+/* #################################################################################################################################### */
+/* #                                                                                                                                  # */
+/* #                               !! NOTICE OF REUSED CODE !!!                                                                       # */
+/* #                                                                                                                                  # */
+/* #     I am reusing SOME of the code from last quarter. The only code that I reused are those                                       # */
+/* #     were in the modules and provided stater code like setupAddressStruct(), setsockopt(),                                        # */ 
+/* #     socket(), bind(), listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All                                    # */ 
+/* #     other code is written by me with the help of Linux man page and the textbook.                                                # */
+/* #     The provided replit in the module had the starter code for client.c. THe link is below:                                      # */
+/* #  https://replit.com/@cs344/83clientc?forkRepl=366f0aab-1aee-44e5-b608-4b4010774e5e&forkContext=coverPage&redirecting=1#client.c  # */
+/* #                                                                                                                                  # */
+/* #                                                                                                                                  # */
+/* #################################################################################################################################### */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +41,7 @@
 /* ######################## */
 
 #define BUFFER_SIZE 256
+#define MAX_SIZE 70001
 int charsRead;                                                                  /* Set charsRead as a global variable */
 int charsWritten;                                                               /* Set charsWritten as a global variable */
 int ciphertextLength = 0;                                                       /* Initialize count for the ciphertext file */
@@ -54,7 +57,7 @@ int result;
 /* ##################################################################################################### */
 
 void 
-error(const char *msg)                                                          /* Error function used for reporting issues */
+error(const char *msg)                                                            /* Error function used for reporting issues */
 {                                                       
   perror(msg);
   exit(1);
@@ -326,6 +329,7 @@ authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNu
 {
   int length = BUFFER_SIZE - 1;
   int size = sizeof(confirmPortNumber);
+  char message[7] = "SYNACK";
   
   //printf("DEC_CLIENT port number: %s\n", confirmPortNumber);
 
@@ -349,7 +353,7 @@ authenticate(int socketFD, struct sockaddr_in serverAddress, char* confirmPortNu
   }
 
   // If returned buffer is not "SYNACK", exit on 2
-  if (strcmp(buffer, "SYNACK") != 0) 
+  if (strcmp(buffer, message) < 0 || strcmp(buffer, message) > 0) 
   {
     fprintf(stderr, "Failed. dec_client attempted to connect to enc_server port #: %d\n", portNumber);
     exit(2);
@@ -416,8 +420,7 @@ int main(int argc, char *argv[]) {
 
   int portNumber = atoi(argv[3]);
   struct sockaddr_in serverAddress;
-  char buffer[256];
-  char plaintext[70010];
+  char buffer[256], plaintext[MAX_SIZE];
   char* confirmServer = "62311"; 
   char host[10] = "localhost";
   //printf("DEC_CLIENT ARGS: %s %s %s %s\n", argv[0], argv[1], argv[2], argv[3]);  

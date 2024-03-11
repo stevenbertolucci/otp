@@ -28,9 +28,11 @@
 /* #                               !! NOTICE OF REUSED CODE !!!                                        # */
 /* #                                                                                                   # */
 /* #     I am reusing SOME of the code from last quarter. The only code that I reused are those        # */
-/* #     were in the modules and provided stater code like setupAddressStruct(), socket(), bind(),     # */
-/* #     listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All other code is         # */
-/* #     written by me with the help of Linux man page and the textbook.                               # */
+/* #     were in the modules and provided stater code like setupAddressStruct(), setsockopt(),         # */
+/* #     socket(), bind(), listen(), accept(), fork(), recv(), send(), waitpid(), and close(). All     # */ 
+/* #     other code is written by me with the help of Linux man page and the textbook.                 # */
+/* #     The provided replit in the modules for the starter code of the server is below:               # */
+/* #                  https://replit.com/@cs344/83serverc?lite=true#server.c                           # */
 /* #                                                                                                   # */
 /* #                                                                                                   # */
 /* ##################################################################################################### */
@@ -51,10 +53,12 @@
 /* ######################## */
 
 #define BUFFER_SIZE 256
+#define BUFFER_255 255
 #define SIZE 69335
 #define KEY_SIZE 70001
 int charsRead, totalReceived, bytesReceived;
 int listenSocket;
+int result;
 
 /* ##################################################################################################### */
 /* #                                                                                                   # */             
@@ -156,7 +160,7 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
 
   while(1)
   {
-    bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);       /* Receive the plaintext from the client */
+    bytesReceived = recv(connectionSocket, buffer, BUFFER_255, 0);               /* Receive the plaintext from the client */
         
     if (bytesReceived < 0) {
 
@@ -195,7 +199,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
 
   while(1)
   {
-    bytesReceived = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
+    bytesReceived = recv(connectionSocket, buffer, BUFFER_255, 0);
           
     if (bytesReceived < 0) {
 
@@ -269,10 +273,9 @@ int
 verify_connection(int connectionSocket, char* buffer, char* portNumber)
 {
 
-  int result;
   char message[19] = "Wrong port, buddy!";
 
-  if (strcmp(buffer, portNumber) != 0)
+  if (strcmp(buffer, portNumber) < 0 || strcmp(buffer, portNumber) > 0)
   {
     send(connectionSocket, message, strlen(message), 0);                /* Send response to client to verify connection */
     result = 0;
@@ -354,10 +357,12 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
 int main(int argc, char *argv[]) {
 
+  // Variables
   int connectionSocket;
   char* portNumber = argv[1];
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
+  char message1[7] = "SYNACK", message2[4] = "ACK";
 
   checkArgs(argc, argv);
 
@@ -398,10 +403,10 @@ int main(int argc, char *argv[]) {
       memset(ciphertext, '\0', sizeof(ciphertext));
       memset(buffer, '\0', sizeof(buffer));
 
-      receive(connectionSocket, buffer, sizeof(buffer) - 1);                            /* Receive message */
+      receive(connectionSocket, buffer, BUFFER_255);                                    /* Receive message */
 
       int result = verify_connection(connectionSocket, buffer, portNumber);             /* Verify connection */
-      int the_buffer_size = sizeof(buffer) - 1;
+      int the_buffer_size = BUFFER_255;
 
       if (!result)
       {
@@ -410,9 +415,9 @@ int main(int argc, char *argv[]) {
       } else {
         
         // Send/receive messages
-        sendRequest(connectionSocket, "SYNACK");
+        sendRequest(connectionSocket, message1);
         receiveResponse(connectionSocket, buffer, the_buffer_size);
-        sendRequest(connectionSocket, "ACK");
+        sendRequest(connectionSocket, message2);
  
         int length = strtol(buffer, NULL, 10);                                          /* Convert string size to integer */
         receivePlaintext(connectionSocket, plaintext, length);                          /* Receive plaintext */
