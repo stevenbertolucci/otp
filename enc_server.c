@@ -54,7 +54,7 @@
 
 #define BUFFER_SIZE 256
 #define BUFFER_255 255
-#define SIZE 69336
+#define SIZE 70010
 #define KEY_SIZE 70001
 int charsRead, totalReceived, bytesReceived;
 int listenSocket;
