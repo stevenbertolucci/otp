@@ -41,7 +41,7 @@
 
 #define BUFFER_SIZE 256
 #define BUFFER_255 255
-#define SIZE 69335
+#define SIZE 69336
 #define KEY_SIZE 70001
 int charsRead, totalReceived, bytesReceived;
 int listenSocket;
@@ -318,7 +318,7 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
 
     if (c == ' ') {
 
-      plaintext[i] = 26;
+      plaintext[i] = ' ';
       
 
     } else {
@@ -326,7 +326,7 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
       c = (c - 65);
       k = (k - 65); 
 
-      value = (c - k);                                                               /* Modulo 27 division */
+      value = ((c - k) % 27);                                                               /* Modulo 27 division */
 
      if (value < 0) {
 

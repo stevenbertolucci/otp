@@ -54,7 +54,7 @@
 
 #define BUFFER_SIZE 256
 #define BUFFER_255 255
-#define SIZE 69335
+#define SIZE 69336
 #define KEY_SIZE 70001
 int charsRead, totalReceived, bytesReceived;
 int listenSocket;
@@ -325,7 +325,7 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
     if (c == ' ') {                                                     /* If space, save the space since it does not need to be encrypted */
 
-      ciphertext[i] = 26;
+      ciphertext[i] = ' ';
 
     } else {
 
@@ -334,9 +334,9 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
       int value = ((c + k) % 27);                                       /* Modulo operation using 27 characters */
 
-      if (value == 26) {                                                  /* If value is negative, add 27 */
+      if (value < 0) {                                                  /* If value is negative, add 27 */
 
-        value = ' ';
+        value += 27;
 
       }
 
