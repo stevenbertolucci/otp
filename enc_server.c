@@ -173,7 +173,7 @@ receivePlaintext(int connectionSocket, char *plaintext, int buffer_length)
 
     totalReceived += bytesReceived;
 
-    if (totalReceived >= buffer_length)
+    if (totalReceived > buffer_length)
     {
       break;
     }
@@ -214,7 +214,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
 
     totalReceived += bytesReceived;
 
-    if (totalReceived >= buffer_length)
+    if (totalReceived > buffer_length)
     {
       break;
     }
@@ -246,7 +246,7 @@ sendCiphertextBack(int connectionSocket, char* ciphertext, int buffer_length)
 
     }
 
-    if (charsRead >= buffer_length)
+    if (charsRead > buffer_length)
     {
       break;
     }

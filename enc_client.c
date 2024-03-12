@@ -54,8 +54,8 @@
 #define BUFFER_SIZE 256                                                                 /* Constant size for buffer */
 int charsRead;                                                                          /* Set charsRead as a global variable */
 int charsWritten;                                                                       /* Set charsWritten as a gglobal variable */
-int plaintextLength = 0;                                                                /* Initialize count for the plaintext file */
-int keyLength = 0;                                                                      /* Initialize count for the key file */
+int plaintextLength;                                                                /* Initialize count for the plaintext file */
+int keyLength;                                                                      /* Initialize count for the key file */
 int socketFD;
 int totalLengthOfFile;
 int result;
@@ -189,7 +189,7 @@ checkBadCharacters(const char* filename)                                        
 
 
 void 
-checkFileLength(const char* plaintext, const char* key)                         /* Function to count how many characters are in each file (plaintext and key) */
+checkFileLength(const char* file1, const char* file2)                           /* Function to count how many characters are in each file (plaintext and key) */
 {        
   /* ************************************** */
   /*                                        */
@@ -198,22 +198,31 @@ checkFileLength(const char* plaintext, const char* key)                         
   /*                                        */
   /* ************************************** */
 
-  FILE* plaintextFile = fopen(plaintext, "rb");                                 /* Open plaintext file */
-  FILE* keyFile = fopen(key, "rb");                                             /* Open key file */
+  plaintextLength = 0;                                                          /* Reset counts for both files */
+  keyLength = 0;
 
-  int ch;                                                                       /* For holding characters */
-
-
-  while ((ch = fgetc(plaintextFile)) != EOF && ch != '\n') {                    /* Count cheacters in the plaintext file */
-      plaintextLength++;
+  FILE* fileOne = fopen(file1, "r");                                            /* Open plaintext file */
+ 
+  if (fileOne == NULL) {
+        fprintf(stderr, "Error opening files\n");
+        exit(1);
   }
 
-  while ((ch = fgetc(keyFile)) != EOF && ch != '\n') {                          /* Count cheacters in the key file */
-      keyLength++;
+  fseek(fileOne, 0, SEEK_END);                                                  /* For holding characters */
+  plaintextLength = ftell(fileOne);                                             /* Count characters in the plaintext file */
+  fclose(fileOne);                                                              /* Close the plaintext file */
+
+
+  FILE* fileTwo = fopen(file2, "r");                                            /* Open key file */
+
+  if (fileTwo == NULL) {
+        fprintf(stderr, "Error opening files\n");
+        exit(1);
   }
 
-  fclose(plaintextFile);                                                        /* Close the plaintext file */
-  fclose(keyFile);                                                              /* Close the key file */
+  fseek(fileTwo, 0, SEEK_END);                                                  /* Count characters in the key file */
+  keyLength = ftell(fileTwo); 
+  fclose(fileTwo);                                                              /* Close the key file */
 
   if (keyLength < plaintextLength)                                              /* Check if the plaintext file is larger than the key */
   {
@@ -278,7 +287,7 @@ sendPlaintextFile(char *argv[], int socketFD, long lengthOfBuffer)
       error("CLIENT: ERROR writing plaintext to socket");                       /* Error message when sending message to server */ 
     }
   
-    if (bytesSent >= plaintextLength)
+    if (bytesSent > plaintextLength)
     {
       fclose(file_descriptor);
       break;
@@ -320,7 +329,7 @@ sendKeyFile(char *argv[], int socketFD, long lengthOfBuffer)
     }
   
 
-    if (bytesSent >= plaintextLength)
+    if (bytesSent > plaintextLength)
     {
       fclose(file_descriptor);
       break;
@@ -362,7 +371,7 @@ receiveCiphertext(int socketFD, char* buffer, long lengthOfBuffer, char* ciphert
 
     totalReceived += bytesReceived;
 
-    if (totalReceived >= plaintextLength) 
+    if (totalReceived > plaintextLength) 
     {
       break;
     }
@@ -495,8 +504,12 @@ int main(int argc, char *argv[]) {
   checkPort(argc, argv);                                                        /* Check to see if we have less than 3 arguments before proceeding to creating a socket */
 
   //printf("1. Counting plaintext and key file\n");
-  checkFileLength(argv[1], argv[2]);                                            /* Check file length */
-  char ciphertext[plaintextLength];
+  char* plainFile = argv[1];
+  char* keyFile = argv[2];
+  checkFileLength(plainFile, keyFile);                                          /* Check file length */
+  // This is what was causing the seg fault. I initalized ciphertext as a VLA.
+  // Gamboard said to not make this VLA which overwrites the address of ciphertext[]. 
+  char ciphertext[70000];
 
   //printf("2. Checking for bad characters\n");
   checkBadCharacters(argv[1]);                                                  /* Check for bad characters */

@@ -165,7 +165,7 @@ receiveCiphertext(int connectionSocket, char *ciphertext, int buffer_length)
 
     totalReceived += bytesReceived;              
     
-    if (totalReceived >= buffer_length) {
+    if (totalReceived > buffer_length) {
       break;
     }
   } 
@@ -206,7 +206,7 @@ receiveKey(int connectionSocket, char *key, int buffer_length)
 
     totalReceived += bytesReceived;
     
-    if (totalReceived >= buffer_length) 
+    if (totalReceived > buffer_length) 
     {
       break;
     }
@@ -274,7 +274,7 @@ sendPlaintextBack(int connectionSocket, char* plaintext, int buffer_length)
 
     } 
 
-    if (charsRead >= buffer_length)
+    if (charsRead > buffer_length)
     {
       break;
     }
@@ -397,10 +397,10 @@ int main(int argc, char *argv[]) {
       charsRead = 0;
 
       // Initialize the arrays
-      memset(plaintext, '\0', sizeof(plaintext));
-      memset(key, '\0', sizeof(key));
-      memset(ciphertext, '\0', sizeof(ciphertext));
-      memset(buffer, '\0', sizeof(buffer));
+      //memset(plaintext, '\0', sizeof(plaintext));
+      //memset(key, '\0', sizeof(key));
+      //memset(ciphertext, '\0', sizeof(ciphertext));
+      //memset(buffer, '\0', sizeof(buffer));
 
       receive(connectionSocket, buffer, BUFFER_255);                                    /* Receive */
 
@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
         receiveResponse(connectionSocket, buffer, the_buffer_size);
         sendRequest(connectionSocket, message2);
 
-        int length = strtol(buffer, NULL, 10);                                          /* Convert string size to integer */
+        int length = atoi(buffer);                                         /* Convert string size to integer */
         receiveCiphertext(connectionSocket, ciphertext, length);                        /* Receive ciphertext */
         receiveKey(connectionSocket, key, length);                                      /* Receive key */
 
