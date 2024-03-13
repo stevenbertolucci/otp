@@ -342,12 +342,6 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
 
       value += 'A';                                                     /* Convert int back to char */
 
-      if (value == '[') {
-
-        value -= 1;                                                     /* Get rid of the left bracket */
-
-      }
-
       ciphertext[i] = value;                                            /* Save the character to the ciphertext array */
     }
   }

@@ -334,15 +334,16 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
 
      }
 
-      value += 'A';
+     if (value == 26) {                                                                     /* Handle value 26 as a space */
 
-      if (value == '[') {
+        plaintext[i] = ' ';
 
-        value += 1;
+     } else {
 
-      }
+      value += 65;
       plaintext[i] = value;                                                                 /* Store the decrypted text to plaintext array */
 
+	  }
    }
   }
 
