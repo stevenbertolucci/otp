@@ -453,10 +453,10 @@ sendBufferSize(int socketFD, void* buffer, long bufferLength)
   int length = bufferLength - 1;
 
   //printf("4. Getting length of plaintext and save it to the buffer\n");
-  char bufferToSaveLength[256];
-  snprintf(bufferToSaveLength, sizeof(bufferToSaveLength), "%d", plaintextLength);    /* Save the plaintext length to buffer length */
-  strncpy((char*)buffer, bufferToSaveLength, bufferLength);                           /* Copy the buffer length to buffer */
-  
+  //char bufferToSaveLength[256];
+  //snprintf(bufferToSaveLength, sizeof(bufferToSaveLength), "%d", plaintextLength);    /* Save the plaintext length to buffer length */
+  //strncpy((char*)buffer, bufferToSaveLength, bufferLength);                           /* Copy the buffer length to buffer */
+  snprintf(buffer, sizeof(buffer), "%d", plaintextLength);
   //printf("5. Sending the file length to the server\n");
   charsWritten = send(socketFD, buffer, length, 0);
   clearBuffer(buffer);
