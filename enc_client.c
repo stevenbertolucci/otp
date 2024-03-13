@@ -202,22 +202,28 @@ checkFileLength(const char* plaintextFile, const char* keyFile)                /
   plaintextLength = 0;                                                          /* Reset counts for both files */
   keyLength = 0;
 
-  FILE* fileOne = fopen(plaintextFile, "r");                                   /* Open plaintext file */
-  FILE* fileTwo = fopen(keyFile, "r");                                         /* Open key file */
-
+  FILE* fileOne = fopen(plaintextFile, "r");                                   /* Open plaintext file */ 
  
-  if (fileOne == NULL || fileTwo == NULL) {
+  if (fileOne == NULL) {
         fprintf(stderr, "Error opening files\n");
         exit(1);
   }
 
   fseek(fileOne, 0, SEEK_END);                                                  /* For holding characters */
   plaintextLength = ftell(fileOne);                                             /* Count characters in the plaintext file */
+  fclose(fileOne);                                                              /* Close the plaintext file */
+
+
+  FILE* fileTwo = fopen(keyFile, "r");                                         /* Open key file */
+
+  if (fileOne == NULL) {
+    fprintf(stderr, "Error opening files\n");
+    exit(1);
+  }
 
   fseek(fileTwo, 0, SEEK_END);                                                  /* Count characters in the key file */
   keyLength = ftell(fileTwo); 
 
-  fclose(fileOne);                                                              /* Close the plaintext file */
   fclose(fileTwo);                                                              /* Close the key file */
 
   if (keyLength < plaintextLength)                                              /* Check if the plaintext file is larger than the key */
