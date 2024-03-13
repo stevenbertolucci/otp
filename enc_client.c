@@ -203,27 +203,22 @@ checkFileLength(const char* plaintextFile, const char* keyFile)                /
   keyLength = 0;
 
   FILE* fileOne = fopen(plaintextFile, "rb");                                   /* Open plaintext file */ 
+  FILE* fileTwo = fopen(keyFile, "rb");                                         /* Open key file */
+
  
-  if (fileOne == NULL) {
+  if (fileOne == NULL || fileTwo == NULL) {
         fprintf(stderr, "Error opening files\n");
         exit(1);
   }
 
   fseek(fileOne, 0, SEEK_END);                                                  /* For holding characters */
   plaintextLength = ftell(fileOne);                                             /* Count characters in the plaintext file */
-  fclose(fileOne);                                                              /* Close the plaintext file */
-
-
-  FILE* fileTwo = fopen(keyFile, "rb");                                         /* Open key file */
-
-  if (fileTwo == NULL) {
-    fprintf(stderr, "Error opening files\n");
-    exit(1);
-  }
-
+ 
   fseek(fileTwo, 0, SEEK_END);                                                  /* Count characters in the key file */
   keyLength = ftell(fileTwo); 
 
+  
+  fclose(fileOne);                                                              /* Close the plaintext file */
   fclose(fileTwo);                                                              /* Close the key file */
 
   if (keyLength < plaintextLength)                                              /* Check if the plaintext file is larger than the key */
@@ -459,10 +454,10 @@ sendBufferSize(int socketFD, void* buffer, long bufferLength)
   int length = bufferLength - 1;
 
   //printf("4. Getting length of plaintext and save it to the buffer\n");
-  //char bufferToSaveLength[256];
-  //snprintf(bufferToSaveLength, sizeof(bufferToSaveLength), "%d", plaintextLength);    /* Save the plaintext length to buffer length */
-  //strncpy((char*)buffer, bufferToSaveLength, bufferLength);                           /* Copy the buffer length to buffer */
-  snprintf(buffer, sizeof(buffer), "%d", plaintextLength);
+  char bufferToSaveLength[256];
+  snprintf(bufferToSaveLength, sizeof(bufferToSaveLength), "%d", plaintextLength);    /* Save the plaintext length to buffer length */
+  strncpy((char*)buffer, bufferToSaveLength, bufferLength);                           /* Copy the buffer length to buffer */
+  
   //printf("5. Sending the file length to the server\n");
   charsWritten = send(socketFD, buffer, length, 0);
   clearBuffer(buffer);
