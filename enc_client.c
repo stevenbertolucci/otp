@@ -202,7 +202,7 @@ checkFileLength(const char* plaintextFile, const char* keyFile)                /
   plaintextLength = 0;                                                          /* Reset counts for both files */
   keyLength = 0;
 
-  FILE* fileOne = fopen(plaintextFile, "r");                                   /* Open plaintext file */ 
+  FILE* fileOne = fopen(plaintextFile, "rb");                                   /* Open plaintext file */ 
  
   if (fileOne == NULL) {
         fprintf(stderr, "Error opening files\n");
@@ -214,9 +214,9 @@ checkFileLength(const char* plaintextFile, const char* keyFile)                /
   fclose(fileOne);                                                              /* Close the plaintext file */
 
 
-  FILE* fileTwo = fopen(keyFile, "r");                                         /* Open key file */
+  FILE* fileTwo = fopen(keyFile, "rb");                                         /* Open key file */
 
-  if (fileOne == NULL) {
+  if (fileTwo == NULL) {
     fprintf(stderr, "Error opening files\n");
     exit(1);
   }
