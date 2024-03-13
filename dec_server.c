@@ -323,8 +323,8 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
 
     } else {
 
-      c = (c - 65);
-      k = (k - 65); 
+      c = (c - 'A');
+      k = (k - 'A'); 
 
       value = ((c - k) % 27);                                                               /* Modulo 27 division */
 
@@ -334,16 +334,15 @@ decrypt(char* plaintext, const char* ciphertext, const char* key)               
 
      }
 
-     if (value == 26) {                                                                     /* Handle value 26 as a space */
+      value += 'A';
 
-        plaintext[i] = ' ';
+      if (value == '[') {
 
-     } else {
+        value += 1;
 
-      value += 65;
+      }
       plaintext[i] = value;                                                                 /* Store the decrypted text to plaintext array */
 
-	  }
    }
   }
 
@@ -397,10 +396,10 @@ int main(int argc, char *argv[]) {
       charsRead = 0;
 
       // Initialize the arrays
-      //memset(plaintext, '\0', sizeof(plaintext));
-      //memset(key, '\0', sizeof(key));
-      //memset(ciphertext, '\0', sizeof(ciphertext));
-      //memset(buffer, '\0', sizeof(buffer));
+      memset(plaintext, '\0', sizeof(plaintext));
+      memset(key, '\0', sizeof(key));
+      memset(ciphertext, '\0', sizeof(ciphertext));
+      memset(buffer, '\0', sizeof(buffer));
 
       receive(connectionSocket, buffer, BUFFER_255);                                    /* Receive */
 
@@ -418,7 +417,7 @@ int main(int argc, char *argv[]) {
         receiveResponse(connectionSocket, buffer, the_buffer_size);
         sendRequest(connectionSocket, message2);
 
-        int length = atoi(buffer);                                         /* Convert string size to integer */
+        int length = strtol(buffer, NULL, 10);                                          /* Convert string size to integer */
         receiveCiphertext(connectionSocket, ciphertext, length);                        /* Receive ciphertext */
         receiveKey(connectionSocket, key, length);                                      /* Receive key */
 

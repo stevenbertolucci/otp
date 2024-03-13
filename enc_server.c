@@ -98,9 +98,9 @@ void
 checkArgs(int argc, char *argv[])
 {
 
-  if (argc < 2) {                                                                                     /* Check usage & args */
+  if (argc < 2) {                                                        /* Check usage & args */
 
-    fprintf(stderr, "USAGE: %s port\n", argv[0]);                                                     /* Print error */
+    fprintf(stderr, "USAGE: %s port\n", argv[0]);                        /* Print error */
     exit(1);
 
   }
@@ -110,18 +110,18 @@ checkArgs(int argc, char *argv[])
 void 
 createSocket()
 {
-  listenSocket = socket(AF_INET, SOCK_STREAM, 0);                                                     /* Create the socket that will listen for connections */
+  listenSocket = socket(AF_INET, SOCK_STREAM, 0);                        /* Create the socket that will listen for connections */
 
   if (listenSocket < 0) 
   {
 
-    error("ERROR opening socket");                                                                    /* Print error */
+    error("ERROR opening socket");                                       /* Print error */
 
   }
 }
 
 void 
-bindSocket(int socket, struct sockaddr_in* serverAddress)                                             /* Bind socket */
+bindSocket(int socket, struct sockaddr_in* serverAddress)                /* Bind socket */
 {
 
     if (bind(socket, (struct sockaddr *)serverAddress, sizeof(*serverAddress)) < 0) {             
@@ -341,6 +341,12 @@ encrypt(char* ciphertext, const char* plaintext, const char* key)       /* Funct
       }
 
       value += 'A';                                                     /* Convert int back to char */
+
+      if (value == '[') {
+
+        value -= 1;                                                     /* Get rid of the left bracket */
+
+      }
 
       ciphertext[i] = value;                                            /* Save the character to the ciphertext array */
     }
